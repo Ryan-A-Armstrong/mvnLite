@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image
+from skimage import img_as_uint
 
 
 class TifStack:
@@ -40,8 +41,9 @@ class TifStack:
     def set_flat(self):
         if self.tif_pages is None:
             self.set_pages()
+        flat_sum = np.sum(self.tif_pages, axis=0)
 
-        return np.sum(self.tif_pages, axis=0)
+        return img_as_uint(flat_sum)
 
     def get_flat(self):
         if self.flattened is None:
