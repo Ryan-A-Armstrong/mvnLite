@@ -1,5 +1,5 @@
-from PIL import Image
 import numpy as np
+from PIL import Image
 
 
 class TifStack:
@@ -11,7 +11,7 @@ class TifStack:
         self.path_to_tif = _path_to_tif
         if flat:
             self.tif_pages = self.set_pages()
-            self.flattened = self.flatten()
+            self.flattened = self.set_flat()
         elif page_list:
             self.tif_pages = self.set_pages()
 
