@@ -63,10 +63,9 @@ def std_2d_segment(tif_file,
     return img_enhanced, mask, img_skel, img_dist
 
 
-def segment_2d_to_meshes(img_dist, coarse=200, fine=20, all_plots=True):
+def segment_2d_to_meshes(img_dist, img_skel, all_plots=True):
+    img_dist = mt2.smooth_dtransform_auto(img_dist, img_skel)
     img_dist = np.pad(img_dist, 1, 'constant', constant_values=0)
-    img_dist = mt2.smooth_dtransform(img_dist, kernel=(coarse, coarse), shift_pct=0.1)
-    img_dist = mt2.smooth_dtransform(img_dist, kernel=(fine, fine), shift_pct=0.1)
     img_3d = mt2.img_dist_to_img_volume(img_dist)
 
     verts, faces, mesh = m.generate_surface(img_3d, iso=0, grad='ascent', plot=all_plots, offscreen=False)

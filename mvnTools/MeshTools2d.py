@@ -1,27 +1,49 @@
 import numpy as np
+from mvnTools.Display import visualize_dist
+from skimage.morphology import disk
+from skimage.filters import rank
 
-def smooth_dtransform(img_dist, kernel=(100, 100), step=(1, 1), shift_pct=0.1):
+
+def smooth_dtransform_auto(img_dist, img_skel):
     print('\t - Transforming euclidean distance to radial distance.')
-    print('\t\t - Kernel size: ' + str(kernel) + '. Step size: ' + str(step) + '.')
+    print('\t\t - Automating kernel size along skeleton path.')
     dim = img_dist.shape
-    x_k = kernel[0]
-    y_k = kernel[1]
-    x_step = step[0]
-    y_step = step[1]
 
-    img_out = np.copy(img_dist)
-    for x in range(0, dim[0] - x_k + 1, x_step):
-        for y in range(0, dim[1] - y_k + 1, y_step):
-            k_array = img_dist[x:x+x_k, y:y+y_k]
+    img_skel = img_skel/np.amax(img_skel)
+    kernel_map = img_dist*img_skel
 
-            k_max = np.amax(k_array)
-            k_min = np.amin(k_array)
+    img_round = np.zeros(img_dist.shape)
+    count_map = np.zeros(img_dist.shape)
 
-            img_out[x:x+x_k, y:y+y_k] = np.sqrt((k_max - k_min)**2 - (k_max - k_array)**2) + k_min
+    for x in range(0, dim[0]):
+        for y in range(0, dim[1]):
+            if kernel_map[x, y] > 0:
+                kr = np.ceil(kernel_map[x, y])
+                x_min, y_min = int(x-kr-1), int(y-kr-1)
+                x_max, y_max = int(x+kr+1), int(y+kr+1)
 
-    img_out = (img_out - np.amax(img_out)*shift_pct).clip(min=0)
+                if x_min < 0:
+                    x_min = 0
+                if y_min < 0:
+                    y_min = 0
+                if x_max >= dim[0]:
+                    x_max = int(dim[0])
+                if y_max >= dim[1]:
+                    y_max = int(dim[1])
 
-    return img_out
+                k_array = img_dist[x_min:x_max, y_min:y_max]
+
+                k_max = np.amax(k_array)
+                k_min = np.amin(k_array)
+
+                img_round[x_min:x_max, y_min:y_max] += np.sqrt((k_max - k_min)**2 - (k_max - k_array)**2) + k_min
+                count_map[x_min:x_max, y_min:y_max] += 1
+
+    print('\t\t - Smoothing transforms between kernels.')
+    count_map = np.where(count_map == 0, 1, count_map)
+    img_round = img_round/count_map
+
+    return img_round
 
 
 def img_dist_to_img_volume(img_dist):
