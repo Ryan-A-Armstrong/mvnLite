@@ -1,4 +1,7 @@
+import warnings
+
 import numpy as np
+import ntpath
 from PIL import Image
 from skimage import img_as_uint
 
@@ -10,6 +13,9 @@ class TifStack:
 
     def __init__(self, _path_to_tif, page_list=True, flat=True):
         self.path_to_tif = _path_to_tif
+        name = ntpath.basename(_path_to_tif).split('.')[0]
+        print('Processing: ' + name +'\n')
+
         if flat:
             self.tif_pages = self.set_pages()
             self.flattened = self.set_flat()
@@ -42,6 +48,7 @@ class TifStack:
         if self.tif_pages is None:
             self.set_pages()
         flat_sum = np.sum(self.tif_pages, axis=0)
+        warnings.filterwarnings('ignore')
 
         return img_as_uint(flat_sum)
 

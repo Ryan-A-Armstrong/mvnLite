@@ -1,6 +1,9 @@
 from mvnTools.TifStack import TifStack as ts
-from mvnTools.SegmentTools2d import SegmentTools2d as st2
-from mvnTools.Display import Display as d
+from mvnTools import SegmentTools2d as st2
+from mvnTools import MeshTools2d as mt2
+from mvnTools import Mesh as m
+from mvnTools import Display as d
+import numpy as np
 
 from skimage.morphology import dilation
 
@@ -21,6 +24,7 @@ def std_2d_segment(tif_file,
                    open_first=False,
                    open_k=0,
                    close_k=5,
+                   connected=False,
                    all_plots=True,
                    review_plot=True):
 
@@ -47,6 +51,9 @@ def std_2d_segment(tif_file,
         mask = st2.close_binary(mask, k=close_k, plot=all_plots)
         mask = st2.open_binary(mask, k=open_k, plot=all_plots)
 
+    if connected:
+        mask = st2.get_largest_connected_region(mask, plot=all_plots)
+
     img_skel = st2.skeleton(mask, plot=all_plots)
     img_dist = st2.distance_transform(mask, plot=all_plots)
 
@@ -54,3 +61,13 @@ def std_2d_segment(tif_file,
         d.review_2d_results(img_enhanced, mask, dilation(img_skel), img_dist)
 
     return img_enhanced, mask, img_skel, img_dist
+
+
+def segment_2d_to_meshes(img_dist, coarse=200, fine=20, all_plots=True):
+    img_dist = np.pad(img_dist, 1, 'constant', constant_values=0)
+    img_dist = mt2.smooth_dtransform(img_dist, kernel=(coarse, coarse), shift_pct=0.1)
+    img_dist = mt2.smooth_dtransform(img_dist, kernel=(fine, fine), shift_pct=0.1)
+    img_3d = mt2.img_dist_to_img_volume(img_dist)
+
+    verts, faces, mesh = m.generate_surface(img_3d, iso=0, grad='ascent', plot=all_plots, offscreen=False)
+    return verts, faces, mesh
