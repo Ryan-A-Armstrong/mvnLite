@@ -1,3 +1,5 @@
+import warnings
+
 import mvnTools.SegmentTools2d as st2
 import numpy as np
 from numba import njit
@@ -90,7 +92,7 @@ def img_2d_stack_to_binary_array(img_2d_stack, smooth=1):
 
     for plane in range(0, len(thresh_3d)):
         thresh = thresh_3d[plane] > threshold_li(thresh_3d[plane])
-        img_out.append(st2.close_binary(thresh, k=5, plot=True, verbose=False))
+        img_out.append(st2.close_binary(thresh, k=1, plot=True, verbose=False))
 
     img_out = np.asarray(img_out)
     img_out = img_out/np.amax(img_out)
@@ -102,5 +104,6 @@ def img_2d_stack_to_binary_array(img_2d_stack, smooth=1):
 
 def skeleton_3d(img_3d):
     print(' - Thinning to 3D skeleton.')
+    warnings.filterwarnings('ignore')
     skel_3d = morphology.skeletonize_3d(img_3d)
     return skel_3d

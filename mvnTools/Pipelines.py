@@ -125,4 +125,6 @@ def std_3d_segment(tif_file):
     img_binary_array = st3.img_2d_stack_to_binary_array(img_2d_stack, smooth=0)
     img_3d = st3.scale_and_fill_z(img_binary_array, 6/2.48)
     img_3d = np.pad(img_3d, 1)
-    verts, faces, mesh = m.generate_surface(img_3d, iso=0, grad='ascent', plot=True, offscreen=False)
+    m.generate_surface(img_3d, iso=0, grad='ascent', plot=True, offscreen=False)
+    skel_3d = st3.skeleton_3d(img_3d)
+    m.generate_surface(skel_3d, iso=0, grad='ascent', plot=True, offscreen=False, connected=False)

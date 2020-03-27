@@ -5,29 +5,29 @@ import wildmeshing as wm
 import os
 import meshio
 
-def clean_mesh(mesh):
-    print('\t - Cleaning mesh')
+def clean_mesh(mesh, connected=True):
+    print('\t - Cleaning mesh (this may take a moment)')
     mesh, info = pymesh.remove_isolated_vertices(mesh)
     mesh, info = pymesh.remove_duplicated_vertices(mesh)
     mesh, info = pymesh.remove_degenerated_triangles(mesh)
     mesh, info = pymesh.remove_duplicated_faces(mesh)
 
-    mesh_list = pymesh.separate_mesh(mesh, 'auto')
-
-    max_verts = 0
-    for mesh_obj in mesh_list:
-        verts = len(mesh_obj.vertices)
-        if verts > max_verts:
-            max_verts = verts
-            mesh = mesh_obj
+    if connected:
+        mesh_list = pymesh.separate_mesh(mesh, 'auto')
+        max_verts = 0
+        for mesh_obj in mesh_list:
+            verts = len(mesh_obj.vertices)
+            if verts > max_verts:
+                max_verts = verts
+                mesh = mesh_obj
 
     return mesh
 
-def generate_surface(img_3d, iso=0, grad='descent', plot=True, offscreen=False):
+def generate_surface(img_3d, iso=0, grad='descent', plot=True, offscreen=False, connected=True):
     print('\t - Generating surface mesh')
     verts, faces, normals, values = measure.marching_cubes_lewiner(img_3d, iso, gradient_direction=grad)
     mesh = pymesh.form_mesh(verts, faces)
-    mesh = clean_mesh(mesh)
+    mesh = clean_mesh(mesh, connected=connected)
     verts = mesh.vertices
     faces = mesh.faces
 
