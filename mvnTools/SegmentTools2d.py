@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from matplotlib import pyplot as plt
 from scipy.ndimage import gaussian_filter
 from skimage import exposure, img_as_float, img_as_ubyte, filters, measure
@@ -15,7 +16,7 @@ Need to cite the code taken from skimage examples
 
 
 def white_top_hat(image, plot=False, k=2):
-    print('\t - Removing peaks.')
+    print('\t - Removing peaks')
     res = white_tophat(image, disk(k))
     if plot:
         d.compare3(image, res, image - res,
@@ -25,7 +26,7 @@ def white_top_hat(image, plot=False, k=2):
 
 
 def black_top_hat(image, plot=False, k=2):
-    print('\t - Removing valleys.')
+    print('\t - Removing valleys')
     res = black_tophat(image, disk(k))
     if plot:
         d.compare3(image, res, image + res,
@@ -101,7 +102,7 @@ def background_dilation(image, gauss=2, plot=True):
 
 
 def cross_entropy_thresh(image, plot=True, verbose=False):
-    print('\t - Thresholding by minimizing cross entropy.')
+    print('\t - Thresholding by minimizing cross entropy')
     image = np.clip(image, -1.0, 1.0)
     im = img_as_ubyte(image)
 
@@ -130,7 +131,7 @@ def cross_entropy_thresh(image, plot=True, verbose=False):
 
 
 def random_walk_thresh(image, low, high, plot=True):
-    print('\t - Thresholding by random walk algorithm.')
+    print('\t - Thresholding by random walk algorithm')
     data = image
     # The range of the binary image spans over (-1, 1).
     # We choose the hottest and the coldest pixels as markers.
@@ -161,7 +162,7 @@ def random_walk_thresh(image, low, high, plot=True):
 
 
 def open_binary(img_binary, k=5, plot=True):
-    print('\t - Removing artifacts.')
+    print('\t - Removing artifacts')
     opened = opening(img_binary, disk(k))
     if plot:
         d.compare2(img_binary, opened, 'Opening: k = %d' % k)
@@ -169,7 +170,7 @@ def open_binary(img_binary, k=5, plot=True):
 
 
 def close_binary(img_binary, k=5, plot=True):
-    print('\t - Closing holes.')
+    print('\t - Closing holes')
     opened = closing(img_binary, disk(k))
     if plot:
         d.compare2(img_binary, opened, 'Closing: k = %d' % k)
@@ -177,11 +178,13 @@ def close_binary(img_binary, k=5, plot=True):
 
 
 def skeleton(img_binary, plot=True):
-    print('\t - Thinning to skeleton.')
+    print('\t - Thinning to skeleton')
     img_skel = skeletonize(img_binary, method='lee')
 
     if plot:
         d.compare2(img_binary, dilation(img_skel), 'Skeletonization (image dilated for viewing)')
+
+    img_skel = img_skel/np.amax(img_skel)
 
     return img_skel
 
@@ -210,6 +213,6 @@ def get_largest_connected_region(img_binary, plot=True):
     img_largest_binary = img_lab == label_max
 
     if plot:
-        d.compare2(img_lab, img_largest_binary, 'Largest Connected Region')
+        d.compare2(img_lab, img_largest_binary, 'Largest Connected Region', cmap='magma')
 
     return img_largest_binary

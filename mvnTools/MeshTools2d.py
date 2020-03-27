@@ -1,12 +1,9 @@
 import numpy as np
-from mvnTools.Display import visualize_dist
-from skimage.morphology import disk
-from skimage.filters import rank
 
 
 def smooth_dtransform_auto(img_dist, img_skel):
-    print('\t - Transforming euclidean distance to radial distance.')
-    print('\t\t - Automating kernel size along skeleton path.')
+    print('\t - Transforming euclidean distance to radial distance')
+    print('\t\t - Automating kernel size along skeleton path')
     dim = img_dist.shape
 
     img_skel = img_skel/np.amax(img_skel)
@@ -27,9 +24,9 @@ def smooth_dtransform_auto(img_dist, img_skel):
                 if y_min < 0:
                     y_min = 0
                 if x_max >= dim[0]:
-                    x_max = int(dim[0])
+                    x_max = dim[0]
                 if y_max >= dim[1]:
-                    y_max = int(dim[1])
+                    y_max = dim[1]
 
                 k_array = img_dist[x_min:x_max, y_min:y_max]
 
@@ -39,7 +36,7 @@ def smooth_dtransform_auto(img_dist, img_skel):
                 img_round[x_min:x_max, y_min:y_max] += np.sqrt((k_max - k_min)**2 - (k_max - k_array)**2) + k_min
                 count_map[x_min:x_max, y_min:y_max] += 1
 
-    print('\t\t - Smoothing transforms between kernels.')
+    print('\t\t - Smoothing transforms between kernels')
     count_map = np.where(count_map == 0, 1, count_map)
     img_round = img_round/count_map
 
@@ -47,7 +44,7 @@ def smooth_dtransform_auto(img_dist, img_skel):
 
 
 def img_dist_to_img_volume(img_dist):
-    print('\t - Projecting into 3space')
+    print('\t - Projecting into z-dimension')
     dims = img_dist.shape
 
     maxr = int(np.ceil(np.amax(img_dist)))

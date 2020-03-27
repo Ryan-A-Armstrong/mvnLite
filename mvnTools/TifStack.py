@@ -14,7 +14,7 @@ class TifStack:
     def __init__(self, _path_to_tif, page_list=True, flat=True):
         self.path_to_tif = _path_to_tif
         name = ntpath.basename(_path_to_tif).split('.')[0]
-        print('Processing: ' + name +'\n')
+        print('Processing: ' + name)
 
         if flat:
             self.tif_pages = self.set_pages()

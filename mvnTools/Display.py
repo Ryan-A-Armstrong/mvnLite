@@ -8,26 +8,26 @@ Need to return to properly cite
 '''
 
 
-def compare2(original, filtered, filter_name):
+def compare2(original, filtered, filter_name, cmap='gray'):
     fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(8, 4), sharex=True,
                                    sharey=True)
-    ax1.imshow(original, cmap='gray')
+    ax1.imshow(original, cmap=cmap)
     ax1.set_title('original')
     ax1.axis('off')
-    ax2.imshow(filtered, cmap='gray')
+    ax2.imshow(filtered, cmap=cmap)
     ax2.set_title(filter_name)
     ax2.axis('off')
     plt.show()
 
 
-def compare3(im1, im2, im3, title1='Image 1', title2='Image 2', title3='Image 3'):
+def compare3(im1, im2, im3, title1='Image 1', title2='Image 2', title3='Image 3', cmap='gray'):
     fig, ax = plt.subplots(ncols=3, figsize=(15, 8))
     ax[0].set_title(title1)
-    ax[0].imshow(im1, cmap='gray')
+    ax[0].imshow(im1, cmap=cmap)
     ax[1].set_title(title2)
-    ax[1].imshow(im2, cmap='gray')
+    ax[1].imshow(im2, cmap=cmap)
     ax[2].set_title(title3)
-    ax[2].imshow(im3, cmap='gray')
+    ax[2].imshow(im3, cmap=cmap)
 
     plt.show()
 
@@ -61,7 +61,7 @@ def review_2d_results(original, mask, dskeleton, distance):
     ax[0].set_title('Original')
     ax[0].imshow(original, cmap='gray')
 
-    ax[1].set_title('Original + Binary Mask + (dilated) Skeleton')
+    ax[1].set_title('Original + Binary Mask')
     ax[1].imshow(original, cmap='gray')
     ax[1].imshow(mask, cmap='Blues', alpha=0.5)
 
