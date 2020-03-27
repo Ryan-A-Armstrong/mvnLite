@@ -15,8 +15,9 @@ Need to cite the code taken from skimage examples
 '''
 
 
-def white_top_hat(image, plot=False, k=2):
-    print('\t - Removing peaks')
+def white_top_hat(image, k=2, plot=False, verbose=True):
+    if verbose:
+        print('\t - Removing white peaks using disk of radius %d' % k)
     res = white_tophat(image, disk(k))
     if plot:
         d.compare3(image, res, image - res,
@@ -25,8 +26,9 @@ def white_top_hat(image, plot=False, k=2):
     return image - res
 
 
-def black_top_hat(image, plot=False, k=2):
-    print('\t - Removing valleys')
+def black_top_hat(image, k=2, plot=False, verbose=True):
+    if verbose:
+        print('\t - Removing black holes using disk of radius %d' % k)
     res = black_tophat(image, disk(k))
     if plot:
         d.compare3(image, res, image + res,
@@ -82,8 +84,9 @@ def contrasts(img, plot=True, adpt=0.04):
     return img, img_rescale, img_eq, img_adapteq
 
 
-def background_dilation(image, gauss=2, plot=True):
-    print('\t - Extracting vessels from background')
+def background_dilation(image, gauss=1/3, plot=True, verbose=True):
+    if verbose:
+        print('\t - Extracting vessels from background and filtering with sigma=%f' % gauss)
     if not gauss:
         return image
 
@@ -101,8 +104,9 @@ def background_dilation(image, gauss=2, plot=True):
     return dilated
 
 
-def cross_entropy_thresh(image, plot=True, verbose=False):
-    print('\t - Thresholding by minimizing cross entropy')
+def cross_entropy_thresh(image, plot=True, plot_entropy=False, verbose=True):
+    if verbose:
+        print('\t - Thresholding by minimizing cross entropy')
     image = np.clip(image, -1.0, 1.0)
     im = img_as_ubyte(image)
 
@@ -114,7 +118,7 @@ def cross_entropy_thresh(image, plot=True, verbose=False):
     if plot:
         d.compare2(im, im > optimal_im_threshold, 'Cross Entropy Threshold')
 
-    if verbose:
+    if plot_entropy:
         plt.plot(thresholds, entropies)
         plt.xlabel('thresholds')
         plt.ylabel('cross-entropy')
@@ -130,8 +134,9 @@ def cross_entropy_thresh(image, plot=True, verbose=False):
     return im > optimal_im_threshold
 
 
-def random_walk_thresh(image, low, high, plot=True):
-    print('\t - Thresholding by random walk algorithm')
+def random_walk_thresh(image, low, high, plot=True, verbose=True):
+    if verbose:
+        print('\t - Thresholding by random walk algorithm with low=%f and high=%f' % (low, high))
     data = image
     # The range of the binary image spans over (-1, 1).
     # We choose the hottest and the coldest pixels as markers.
@@ -161,24 +166,27 @@ def random_walk_thresh(image, low, high, plot=True):
     return labels - 1
 
 
-def open_binary(img_binary, k=5, plot=True):
-    print('\t - Removing artifacts')
+def open_binary(img_binary, k=5, plot=True, verbose=True):
+    if verbose:
+        print('\t - Removing artifacts with disk of radius %d' % k)
     opened = opening(img_binary, disk(k))
     if plot:
         d.compare2(img_binary, opened, 'Opening: k = %d' % k)
     return opened
 
 
-def close_binary(img_binary, k=5, plot=True):
-    print('\t - Closing holes')
+def close_binary(img_binary, k=5, plot=True, verbose=True):
+    if verbose:
+        print('\t - Closing holes with disk of radius %d' % k)
     opened = closing(img_binary, disk(k))
     if plot:
         d.compare2(img_binary, opened, 'Closing: k = %d' % k)
     return opened
 
 
-def skeleton(img_binary, plot=True):
-    print('\t - Thinning to skeleton')
+def skeleton(img_binary, plot=True, verbose=True):
+    if verbose:
+        print('\t - Thinning to skeleton')
     img_skel = skeletonize(img_binary, method='lee')
 
     if plot:
@@ -189,8 +197,9 @@ def skeleton(img_binary, plot=True):
     return img_skel
 
 
-def distance_transform(img_binary, plot=True):
-    print('\t - Calculating euclidean distance transform')
+def distance_transform(img_binary, plot=True, verbose=True):
+    if verbose:
+        print('\t - Calculating euclidean distance transform')
     img_dist = ndi.distance_transform_edt(img_binary)
 
     if plot:
@@ -199,8 +208,9 @@ def distance_transform(img_binary, plot=True):
     return img_dist
 
 
-def get_largest_connected_region(img_binary, plot=True):
-    print('\t - Retaining only the largest connected region')
+def get_largest_connected_region(img_binary, plot=True, verbose=True):
+    if verbose:
+        print('\t - Retaining only the largest connected region')
     img_lab = measure.label(img_binary, connectivity=2)
     regions = measure.regionprops(img_lab)
     val_max = 0

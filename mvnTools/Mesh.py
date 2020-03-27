@@ -6,13 +6,25 @@ import os
 import meshio
 
 def clean_mesh(mesh):
-    print('\t - Cleaning mesh.')
+    print('\t - Cleaning mesh')
     mesh, info = pymesh.remove_isolated_vertices(mesh)
+    mesh, info = pymesh.remove_duplicated_vertices(mesh)
+    mesh, info = pymesh.remove_degenerated_triangles(mesh)
     mesh, info = pymesh.remove_duplicated_faces(mesh)
+
+    mesh_list = pymesh.separate_mesh(mesh, 'auto')
+
+    max_verts = 0
+    for mesh_obj in mesh_list:
+        verts = len(mesh_obj.vertices)
+        if verts > max_verts:
+            max_verts = verts
+            mesh = mesh_obj
+
     return mesh
 
 def generate_surface(img_3d, iso=0, grad='descent', plot=True, offscreen=False):
-    print('\t - Generating surface mesh.')
+    print('\t - Generating surface mesh')
     verts, faces, normals, values = measure.marching_cubes_lewiner(img_3d, iso, gradient_direction=grad)
     mesh = pymesh.form_mesh(verts, faces)
     mesh = clean_mesh(mesh)

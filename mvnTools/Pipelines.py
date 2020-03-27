@@ -1,5 +1,6 @@
 from mvnTools.TifStack import TifStack as ts
 from mvnTools import SegmentTools2d as st2
+from mvnTools import SegmentTools3d as st3
 from mvnTools import MeshTools2d as mt2
 from mvnTools import Mesh as m
 from mvnTools import NetworkTools2d as nw2
@@ -22,6 +23,7 @@ def std_2d_segment(tif_file, scale_xy=(1, 1),
                    rwalk_thresh=(0, 0),
                    bth_k=3,
                    wth_k=3,
+                   dila_gauss=1/3,
                    open_first=False,
                    open_k=0,
                    close_k=5,
@@ -39,7 +41,7 @@ def std_2d_segment(tif_file, scale_xy=(1, 1),
     print(' \nFiltering the flattened image')
     img = st2.black_top_hat(img_enhanced, plot=all_plots, k=bth_k)
     img = st2.white_top_hat(img, plot=all_plots, k=wth_k)
-    dilated = st2.background_dilation(img, gauss=2, plot=all_plots)
+    dilated = st2.background_dilation(img, gauss=dila_gauss, plot=all_plots)
 
     print(' - Converting to binary mask')
     if thresh_method == 'random-walk':
@@ -97,7 +99,7 @@ def segment_2d_to_meshes(img_dist, img_skel, all_plots=True):
 
 def generate_2d_network(img_skel, img_dist,
                         near_node_tol=5, length_tol=1,
-                        img_enhanced=np.zeros(0), plot=True, ):
+                        img_enhanced=np.zeros(0), plot=True):
     print(' \nTransforming image data to newtwork representation (nodes and weighted edges)')
 
     ends, branches = nw2.get_ends_and_branches(img_skel)
@@ -115,3 +117,12 @@ def generate_2d_network(img_skel, img_dist,
         nw2.show_graph(G)
 
     return G
+
+
+def std_3d_segment(tif_file):
+    img_original = ts(tif_file, page_list=True, flat=False)
+    img_2d_stack = img_original.get_pages()
+    img_binary_array = st3.img_2d_stack_to_binary_array(img_2d_stack, smooth=0)
+    img_3d = st3.scale_and_fill_z(img_binary_array, 6/2.48)
+    img_3d = np.pad(img_3d, 1)
+    verts, faces, mesh = m.generate_surface(img_3d, iso=0, grad='ascent', plot=True, offscreen=False)
