@@ -121,20 +121,31 @@ def generate_2d_network(img_skel, img_dist,
 
 
 def std_3d_segment(tif_file):
-    img_enhanced, img_mask, img_skel, img_dist, scaled = std_2d_segment(tif_file, all_plots=False)
+    img_enhanced, img_mask, img_skel, img_dist, scaled = std_2d_segment(tif_file, all_plots=False, connected=True)
 
     img_original = ts(tif_file, page_list=True, flat=False)
     img_2d_stack = img_original.get_pages()
     img_binary_array = st3.img_2d_stack_to_binary_array(img_2d_stack, smooth=0)
     img_3d = st3.scale_and_fill_z(img_binary_array, 1.14*1.242)
     img_3d = np.pad(img_3d, 1)
-    img_3d, img_mask = st3.pre_process_fill_lumen_ellipsoid(img_3d, img_mask)
+
+
     start = timer()
-    lumen_mask = st3.fill_lumen_ellipsoid(img_3d, img_mask)
+    img_3d, img_mask = st3.pre_process_fill_lumen(img_3d, img_mask)
+    lumen_mask_e = st3.fill_lumen_ellipsoid(img_3d, img_mask)
     end = timer()
     print(end-start)
-    img_3d_f = img_3d + lumen_mask
-    st3.show_lumen_fill(img_3d, lumen_mask)
-    m.generate_surface(img_3d_f, iso=0, grad='ascent', plot=True, offscreen=False)
-    skel_3d = st3.skeleton_3d(img_3d_f)
+    img_3d_e = img_3d + lumen_mask_e
+
+    #img_3d_e = img_3d
+    start = timer()
+    img_3d_e, img_mask = st3.pre_process_fill_lumen(img_3d_e, img_mask)
+    lumen_mask_r = st3.fill_lumen_ray_tracing(img_3d_e, img_mask)
+    end = timer()
+    print(end - start)
+    img_3d_r = img_3d_e + lumen_mask_r
+    st3.show_lumen_fill(img_3d, lumen_mask_e, l2_fill=lumen_mask_r)
+
+    m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=True, offscreen=False)
+    skel_3d = st3.skeleton_3d(img_3d_r)
     m.generate_surface(skel_3d, iso=0, grad='ascent', plot=True, offscreen=False, connected=False)
