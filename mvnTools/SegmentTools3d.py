@@ -53,7 +53,7 @@ def scale_and_fill_z(im_25d, z_scale):
     return img_3d
 
 
-def pre_process_fill_lumen_ball(img_3d, img_mask):
+def pre_process_fill_lumen_ellipsoid(img_3d, img_mask):
     dims = img_3d.shape
     mask_dim = img_mask.shape
     if mask_dim[0] != dims[1] or mask_dim[1] != dims[2]:
@@ -66,17 +66,18 @@ def pre_process_fill_lumen_ball(img_3d, img_mask):
     return img_3d, img_mask
 
 @njit(parallel=True)
-def get_ball_filter(r):
+def get_ellipsoid_filter(r, h):
     n = 2 * r - 1
     a, b = int(n / 2), int(n / 2)
     ball_filter_blank = np.zeros((1, n, n))
     ball_filter = ball_filter_blank.copy()
 
-    for b_slice in range(0, r):
+    for b_slice in range(0, h):
         mask = np.zeros((n, n))
+        scaled_r = (b_slice/h)*r
         for x in prange(n):
             for y in prange(n):
-                if (a - x) ** 2 + (b - y) ** 2 <= b_slice ** 2:
+                if (a - x) ** 2 + (b - y) ** 2 <= scaled_r ** 2:
                     mask[x, y] = 1
 
         plane = ball_filter_blank
@@ -84,21 +85,18 @@ def get_ball_filter(r):
         ball_filter = np.append(ball_filter, plane, axis=0)
 
     ball_mask = ball_filter
-    for b_slice in range(1, r):
+    for b_slice in range(1, h):
         plane = ball_filter_blank
-        plane[0] = ball_filter[r - b_slice]
+        plane[0] = ball_filter[h - b_slice]
         ball_mask = np.append(ball_mask, plane, axis=0)
 
-    ball_mask = ball_mask[1::]
-
-    return ball_mask
-
+    return ball_mask[1::]
 
 
 @njit(parallel=True)
-def fill_lumen_ball(img_3d, img_mask,
-                    maxr=15, minr=1,
-                    thresh_pct=0.1, method='octants', thresh_num_oct=5, thresh_num_oct_op=4,
+def fill_lumen_ellipsoid(img_3d, img_mask,
+                    maxr=15, minr=1, h_pct_r=0.75,
+                    thresh_pct=0.15, method='octants', thresh_num_oct=5, thresh_num_oct_op=3,
                     max_iters=1):
 
     r = maxr
@@ -106,15 +104,18 @@ def fill_lumen_ball(img_3d, img_mask,
     dim_z, dim_x, dim_y = dims[0], dims[1], dims[2]
     lumen_mask_tot = np.zeros(dims)
 
-    print(' - Filling lumen using ball of radius:')
+    print('Filling lumen using ellipsoid.')
     while r >= minr:
+        print('Radius (xy)')
         print(r)
 
         num_changes, its = 1, 0
-        ball_mask = get_ball_filter(r)
+        h = int(r*h_pct_r)
+        ball_mask = get_ellipsoid_filter(r, h)
+
 
         if method == 'octants' or method == 'pairs':
-            oct_max_score = np.sum(ball_mask[0:r+1, 0:r+1, 0:r+1])
+            oct_max_score = np.sum(ball_mask[0:h+1, 0:r+1, 0:r+1])
             thresh = thresh_pct*oct_max_score
 
         elif method == 'ball':
@@ -125,11 +126,11 @@ def fill_lumen_ball(img_3d, img_mask,
             its = its + 1
 
             lumen_mask = np.zeros(dims, np.int8)
-            for z in prange(r, dim_z-r):
+            for z in prange(h, dim_z-h):
                 for x in prange(r, dim_x-r):
                     for y in prange(r, dim_y-r):
                         if img_mask[x, y] and not img_3d[z, x, y]:
-                            cube_region = img_3d[z-r+1:z+r, x-r+1:x+r, y-r+1:y+r]
+                            cube_region = img_3d[z-h+1:z+h, x-r+1:x+r, y-r+1:y+r]
                             filtered_cube = cube_region*ball_mask
                             total_hot = np.sum(filtered_cube)
 
@@ -142,18 +143,17 @@ def fill_lumen_ball(img_3d, img_mask,
                                 oct_op_pairs = 0
 
                                 octants = np.zeros(8)
-                                octants[0] = np.sum(filtered_cube[0:r+1, 0:r+1, 0:r+1])
-                                octants[1] = np.sum(filtered_cube[r:2*r+1, r:2*r+1, r:2*r+1])
+                                octants[0] = np.sum(filtered_cube[0:h+1, 0:r+1, 0:r+1])
+                                octants[1] = np.sum(filtered_cube[h:2*h+1, r:2*r+1, r:2*r+1])
 
-                                octants[2] = np.sum(filtered_cube[0:r+1, r:2*r+1, 0:r+1])
-                                octants[3] = np.sum(filtered_cube[r:2*r+1, 0:r+1, r:2*r+1])
+                                octants[2] = np.sum(filtered_cube[0:h+1, r:2*r+1, 0:r+1])
+                                octants[3] = np.sum(filtered_cube[h:2*h+1, 0:r+1, r:2*r+1])
 
-                                octants[4] = np.sum(filtered_cube[0:r + 1, 0:r + 1, r:2*r+1])
-                                octants[5] = np.sum(filtered_cube[r:2*r+1, r:2*r+1, 0:r + 1])
+                                octants[4] = np.sum(filtered_cube[0:h + 1, 0:r + 1, r:2*r+1])
+                                octants[5] = np.sum(filtered_cube[h:2*h+1, r:2*r+1, 0:r + 1])
 
-                                octants[6] = np.sum(filtered_cube[r:2*r+1, 0:r + 1, 0:r + 1])
-                                octants[7] = np.sum(filtered_cube[0:r + 1, r:2*r+1, r:2*r+1])
-
+                                octants[6] = np.sum(filtered_cube[h:2*h+1, 0:r + 1, 0:r + 1])
+                                octants[7] = np.sum(filtered_cube[0:h + 1, r:2*r+1, r:2*r+1])
 
                                 for oc in prange(8):
                                     oct_count += octants[oc] > thresh
@@ -208,7 +208,7 @@ def fill_lumen(img_3d, rl_xy=(5, 5), rh_xy=(10, 10), rz=1, thresh=10, iters=3):
 def show_lumen_fill(img_25d, l_fill):
     dims = img_25d.shape
     for p in range(0, dims[0]):
-        print('Z-Slice %d of %d' % (p, dims[0] - 1))
+        #print('Z-Slice %d of %d' % (p, dims[0] - 1))
         fig, ax = plt.subplots(ncols=3, figsize=(15, 8))
         ax[0].set_title('Original')
         ax[0].imshow(img_25d[p], cmap='gray')
@@ -236,7 +236,7 @@ def img_2d_stack_to_binary_array(img_2d_stack, smooth=1):
 
     for plane in range(0, len(thresh_3d)):
         thresh = thresh_3d[plane] > threshold_li(thresh_3d[plane])
-        img_out.append(st2.close_binary(thresh, k=1, plot=True, verbose=False))
+        img_out.append(st2.close_binary(thresh, k=1, plot=False, verbose=False))
 
     img_out = np.asarray(img_out)
     img_out = img_out/np.amax(img_out)
