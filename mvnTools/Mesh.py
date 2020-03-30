@@ -23,11 +23,12 @@ def clean_mesh(mesh, connected=True):
 
     return mesh
 
-def generate_surface(img_3d, iso=0, grad='descent', plot=True, offscreen=False, connected=True):
+def generate_surface(img_3d, iso=0, grad='descent', plot=True, offscreen=False, connected=True, clean=True):
     print('\t - Generating surface mesh')
     verts, faces, normals, values = measure.marching_cubes_lewiner(img_3d, iso, gradient_direction=grad)
     mesh = pymesh.form_mesh(verts, faces)
-    mesh = clean_mesh(mesh, connected=connected)
+    if clean:
+        mesh = clean_mesh(mesh, connected=connected)
     verts = mesh.vertices
     faces = mesh.faces
 

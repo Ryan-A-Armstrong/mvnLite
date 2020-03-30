@@ -9,7 +9,6 @@ from skimage.filters import threshold_li, threshold_sauvola
 from matplotlib import pyplot as plt
 
 
-
 def interp_slices(top, bottom, percent_bottom):
     dist_top_pos = ndi.distance_transform_edt(top)
     dist_bot_pos = ndi.distance_transform_edt(bottom)
@@ -32,10 +31,10 @@ def scale_and_fill_z(im_25d, z_scale):
 
     img_3d = []
     for i in range(0, len(im_25d) - 1):
-        top = im_25d[i + 1]
-        bottom = im_25d[i]
+        bottom = im_25d[i + 1]
+        top = im_25d[i]
 
-        img_3d.append(bottom)
+        img_3d.append(top)
         num_int_img = int(z_scale - 1)
         if off_int_cum > 1:
             num_int_img += 1
@@ -111,7 +110,7 @@ def get_new_pos(old_pos, k,  path_l):
 
 @njit(parallel=True)
 def fill_lumen_ray_tracing(img_3d, img_mask,
-                           n_theta=3, n_phi=3, mode='uniform', max_escape=1,
+                           n_theta=3, n_phi=3, theta='sweep', mode='uniform', max_escape=1,
                            path_l=1):
     print(' - Identifying and filling lumen internal lumen hole via ray tracing')
     dims = img_3d.shape
@@ -122,7 +121,8 @@ def fill_lumen_ray_tracing(img_3d, img_mask,
 
     thetas = np.linspace(-np.pi / 2, np.pi / 2, n_theta)
     phis = np.linspace(0, 2 * np.pi, n_phi + 1)[1::]
-
+    if theta == 'xy':
+        thetas = np.array([np.pi/2])
     for z in prange(0, dim_z):
         for x in prange(0, dim_x):
             for y in prange(0, dim_y):
@@ -130,7 +130,7 @@ def fill_lumen_ray_tracing(img_3d, img_mask,
                     escaped = 0
                     free_path = False
 
-                    for i_t in prange(n_theta):
+                    for i_t in prange(len(thetas)):
                         if free_path:
                             break
                         if mode == 'random':
@@ -138,7 +138,7 @@ def fill_lumen_ray_tracing(img_3d, img_mask,
                         else:
                             t = thetas[i_t]
 
-                        for i_p in prange(n_phi):
+                        for i_p in prange(len(phis)):
                             if free_path:
                                 break
                             if mode == 'random':
@@ -276,7 +276,7 @@ def show_lumen_fill(img_25d, l_fill, l2_fill=None, cmap1='Blues', cmap2='Reds'):
         plt.show()
 
 
-def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, plot_all=False):
+def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, plot_all=False, window_size=(7, 15, 15)):
     print(' - Converting each z-plane to a binary mask')
     img_2d_stack = np.asarray(img_2d_stack)
 
@@ -287,7 +287,7 @@ def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, plot_all=False)
         img_2d_stack[im_plane] = im
 
     img_out = []
-    thresh_3d = threshold_sauvola(img_2d_stack, window_size=(7, 15, 15), k=0.3)
+    thresh_3d = threshold_sauvola(img_2d_stack, window_size=window_size, k=0.3)
 
     for plane in range(0, len(thresh_3d)):
         thresh = thresh_3d[plane] > threshold_li(thresh_3d[plane])
@@ -297,7 +297,7 @@ def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, plot_all=False)
     img_out = img_out / np.amax(img_out)
     img_out = morphology.binary_opening(img_out)
     img_out = morphology.binary_closing(img_out)
-    img_out = st2.get_largest_connected_region(img_out, plot=plot_all)
+    img_out = st2.get_largest_connected_region(img_out, plot=False)
     return img_out
 
 

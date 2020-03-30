@@ -7,8 +7,10 @@ from mvnTools import NetworkTools2d as nw2
 from mvnTools import Display as d
 import numpy as np
 from skimage import transform, filters
-from skimage.morphology import dilation
+from skimage.morphology import dilation, closing
+from mayavi.mlab import *
 from timeit import default_timer as timer
+from matplotlib import pyplot as plt
 
 contrasts = {'original': 0, 'rescale': 1, 'equalize': 2, 'adaptive': 3}
 
@@ -73,9 +75,8 @@ def std_2d_segment(tif_file, scale_xy,
         img_mask = transform.resize(img_mask, new_dim)
         img_enhanced = transform.resize(img_enhanced, new_dim)
 
-
     print('\t - Smoothing mask to reduce skeleton error')
-    img_mask = filters.gaussian(img_mask, sigma=(smooth * scale_xy[0] / 3.0, smooth * scale_xy[0] / 3.0))
+    img_mask = filters.gaussian(img_mask, sigma=(smooth * scale_xy[0] / 3.0, smooth * scale_xy[1] / 3.0))
     img_mask = img_mask > 0.5
     print('\t\t - Using smooth=' + str(smooth) +
           ' coresponding to a gaussian filter of sigma=' +
@@ -92,7 +93,6 @@ def std_2d_segment(tif_file, scale_xy,
 
 
 def segment_2d_to_meshes(img_dist, img_skel, all_plots=True):
-
     img_dist = mt2.smooth_dtransform_auto(img_dist, img_skel)
     img_dist = np.pad(img_dist, 1, 'constant', constant_values=0)
     img_3d = mt2.img_dist_to_img_volume(img_dist)
@@ -126,14 +126,17 @@ def generate_2d_network(img_skel, img_dist,
 def std_3d_segment(img_2d_stack, img_mask, scale,
                    maxr=15, minr=1, h_pct_r=0.75,
                    thresh_pct=0.15, ellisoid_method='octants', thresh_num_oct=5, thresh_num_oct_op=3, max_iters=1,
-                   n_theta=4, n_phi=4, ray_trace_mode='uniform', max_escape=1, path_l=1,
+                   n_theta=4, n_phi=4, ray_trace_mode='uniform', theta='xy', max_escape=1, path_l=1,
+                   bth_k=3, wth_k=3, window_size=(7, 15, 15),
                    plot_slices=False, plot_lumen_fill=True, plot_3d=True):
     print('\n============')
     print('3d analysis:')
     print('============')
-    img_binary_array = st3.img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, plot_all=plot_slices)
+    img_binary_array = st3.img_2d_stack_to_binary_array(img_2d_stack, bth_k=bth_k, wth_k=wth_k,
+                                                        window_size=window_size, plot_all=plot_slices)
 
-    img_3d = img_binary_array
+    img_3d = img_binary_array.astype('int')
+    img_3d = np.asarray(img_2d_stack).astype('int')
     img_3d, img_mask = st3.pre_process_fill_lumen(img_3d, img_mask)
     lumen_mask_e = st3.fill_lumen_ellipsoid(img_3d, img_mask,
                                             maxr=maxr, minr=minr, h_pct_r=h_pct_r,
@@ -143,32 +146,37 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
                                             max_iters=max_iters)
     img_3d_e = img_3d + lumen_mask_e
     img_3d_e, img_mask = st3.pre_process_fill_lumen(img_3d_e, img_mask)
-    lumen_mask_r = st3.fill_lumen_ray_tracing(img_3d, img_mask,
-                                              n_theta=n_theta, n_phi=n_phi, mode=ray_trace_mode, max_escape=max_escape,
-                                              path_l=path_l)
+    lumen_mask_r = st3.fill_lumen_ray_tracing(img_3d_e, img_mask,
+                                              n_theta=n_theta, n_phi=n_phi, mode=ray_trace_mode, theta=theta,
+                                              max_escape=max_escape, path_l=path_l)
     img_3d_r = img_3d_e + lumen_mask_r
     if plot_lumen_fill:
         st3.show_lumen_fill(img_3d, lumen_mask_e, l2_fill=lumen_mask_r)
 
     img_3d_r = img_3d_r > 0
-    img_3d_r[True] = 1
-
     img_3d_r = st3.scale_and_fill_z(img_3d_r, scale[2])
-    img_3d_r = np.pad(img_3d_r, 1)
 
     if scale[0] != 1 or scale[1] != 1:
         print(' - Scaling to 1 um / pixel in xy')
         new_img = []
-        current_dim = img_mask.shape
+        current_dim = img_3d_r[0].shape
         new_dim = (np.round(current_dim[0] * scale[0]), np.round(current_dim[1] * scale[1]))
         for im_plane in img_3d_r:
-            new_img.append(transform.resize(im_plane, new_dim))
+            new_plane = transform.resize(im_plane, new_dim, preserve_range=True)
+            new_plane = filters.gaussian(new_plane, sigma=(scale[0] / 3.0, scale[1] / 3.0), preserve_range=True)
+            mean = np.mean(new_plane)
+            new_img.append(new_plane > np.mean(mean))
 
         img_3d_r = np.asarray(new_img)
 
+    img_3d_r = np.pad(img_3d_r, 1)
 
     mesh = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False)
     skel_3d = st3.skeleton_3d(img_3d_r)
-    m.generate_surface(skel_3d, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False)
+    skel_success = np.sum(skel_3d)
+    if skel_success:
+        m.generate_surface(skel_3d, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
+    else:
+        print('WARNING: 3D SKELETONIZATION FAILED')
 
     return img_3d_r, mesh, skel_3d
