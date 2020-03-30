@@ -5,9 +5,9 @@ import numpy as np
 from numba import njit, prange
 from scipy import ndimage as ndi
 from skimage import morphology, transform, filters
-from skimage.morphology.selem import disk
 from skimage.filters import threshold_li, threshold_sauvola
 from matplotlib import pyplot as plt
+
 
 
 def interp_slices(top, bottom, percent_bottom):
@@ -26,7 +26,7 @@ def interp_slices(top, bottom, percent_bottom):
 
 
 def scale_and_fill_z(im_25d, z_scale):
-    print('Interpolating and scaling z planes.')
+    print(' - Interpolating and scaling z-planes to 1 um / pixel.')
     off_int = z_scale - int(z_scale)
     off_int_cum = 0
 
@@ -101,18 +101,11 @@ def get_ellipsoid_filter(r, h):
 # output:  new_pos   -new position(x,y,z)
 @njit(fastmath=True)
 def get_new_pos(old_pos, k,  path_l):
-    #print('old pos')
-    #print(old_pos)
-    #print('k')
-    #print(k)
     delz = path_l * np.cos(k[0])
     delx = path_l * np.sin(k[0]) * np.cos(k[1])
     dely = path_l * np.sin(k[0]) * np.sin(k[1])
 
     new_pos = (old_pos[0] + delz, old_pos[1] + delx, old_pos[2] + dely)
-    #print('new pos')
-    #print(new_pos)
-    #print()
     return new_pos
 
 
@@ -120,7 +113,7 @@ def get_new_pos(old_pos, k,  path_l):
 def fill_lumen_ray_tracing(img_3d, img_mask,
                            n_theta=3, n_phi=3, mode='uniform', max_escape=1,
                            path_l=1):
-    print('Ray Tracing')
+    print(' - Identifying and filling lumen internal lumen hole via ray tracing')
     dims = img_3d.shape
     lumen_mask = np.zeros(dims, np.int8)
 
@@ -135,7 +128,7 @@ def fill_lumen_ray_tracing(img_3d, img_mask,
             for y in prange(0, dim_y):
                 if img_mask[x, y] and not img_3d[z, x, y]:
                     escaped = 0
-                    free_path = escaped >= max_escape
+                    free_path = False
 
                     for i_t in prange(n_theta):
                         if free_path:
@@ -170,7 +163,7 @@ def fill_lumen_ray_tracing(img_3d, img_mask,
 
                             if not in_img: # Loop broke because ray got to image edge
                                 escaped = escaped + 1
-                                free_path = True
+                                free_path = escaped >= max_escape
 
                     if not free_path:
                         lumen_mask[z, x, y] = 1
@@ -188,8 +181,8 @@ def fill_lumen_ellipsoid(img_3d, img_mask,
     dim_z, dim_x, dim_y = dims[0], dims[1], dims[2]
     lumen_mask_tot = np.zeros(dims)
 
-    print('Filling lumen using ellipsoid.')
-    print('Filter radius (xy)')
+    print(' - Filling lumen using ellipsoid structuring element (this may take several minutes).')
+    print('\t - Using xy radius of:')
     while r >= minr:
         print(r)
 
@@ -283,13 +276,14 @@ def show_lumen_fill(img_25d, l_fill, l2_fill=None, cmap1='Blues', cmap2='Reds'):
         plt.show()
 
 
-def img_2d_stack_to_binary_array(img_2d_stack, smooth=1):
+def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, plot_all=False):
+    print(' - Converting each z-plane to a binary mask')
     img_2d_stack = np.asarray(img_2d_stack)
 
     for im_plane in range(0, len(img_2d_stack)):
         im = img_2d_stack[im_plane]
-        im = st2.black_top_hat(im, plot=False, k=3, verbose=False)
-        im = st2.white_top_hat(im, plot=False, k=3, verbose=False)
+        im = st2.black_top_hat(im, plot=False, k=bth_k, verbose=False)
+        im = st2.white_top_hat(im, plot=False, k=wth_k, verbose=False)
         img_2d_stack[im_plane] = im
 
     img_out = []
@@ -297,13 +291,13 @@ def img_2d_stack_to_binary_array(img_2d_stack, smooth=1):
 
     for plane in range(0, len(thresh_3d)):
         thresh = thresh_3d[plane] > threshold_li(thresh_3d[plane])
-        img_out.append(st2.close_binary(thresh, k=1, plot=False, verbose=False))
+        img_out.append(st2.close_binary(thresh, k=1, plot=plot_all, verbose=False))
 
     img_out = np.asarray(img_out)
     img_out = img_out / np.amax(img_out)
     img_out = morphology.binary_opening(img_out)
     img_out = morphology.binary_closing(img_out)
-    img_out = st2.get_largest_connected_region(img_out, plot=False)
+    img_out = st2.get_largest_connected_region(img_out, plot=plot_all)
     return img_out
 
 

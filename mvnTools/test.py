@@ -11,4 +11,7 @@ G = generate_2d_network(img_skel, img_dist,
                         near_node_tol=5, length_tol=1,
                         img_enhanced=img_enhanced, plot=True)
 '''
-std_3d_segment('/home/ryan/Desktop/mvn-analysis/data/10x.tif')
+img_enhanced, img_mask, img_skel, img_dist, img_original = \
+    std_2d_segment('/home/ryan/Desktop/mvn-analysis/data/original_sample.tif', (1.2420, 1.2420), connected=True)
+img_2d_stack = img_original.get_pages()
+std_3d_segment(img_2d_stack, img_mask, 1.14)

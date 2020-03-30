@@ -33,7 +33,7 @@ def generate_surface(img_3d, iso=0, grad='descent', plot=True, offscreen=False, 
 
     if plot:
         d.visualize_mesh((verts, faces), offscreen=offscreen)
-    return verts, faces, mesh
+    return mesh
 
 
 def generate_lumen_tetmsh(path_to_surface_obj, path_to_volume_msh='', removeOBJ=False):
