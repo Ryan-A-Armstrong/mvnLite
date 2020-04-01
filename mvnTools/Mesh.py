@@ -15,8 +15,9 @@ def clean_mesh(mesh, connected=True):
     if connected:
         mesh_list = pymesh.separate_mesh(mesh, 'auto')
         max_verts = 0
+        print('Total number of meshes (ideally 1): %d' %  len(mesh_list))
         for mesh_obj in mesh_list:
-            verts = len(mesh_obj.vertices)
+            verts = mesh_obj.num_vertices
             if verts > max_verts:
                 max_verts = verts
                 mesh = mesh_obj

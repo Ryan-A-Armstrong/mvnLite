@@ -34,6 +34,7 @@ def std_2d_segment(tif_file, scale_xy,
                    smooth=1,
                    all_plots=True,
                    review_plot=True):
+
     img_original = ts(tif_file, page_list=False, flat=True)
     img_original_flat = img_original.get_flat()
 
@@ -76,8 +77,9 @@ def std_2d_segment(tif_file, scale_xy,
         img_enhanced = transform.resize(img_enhanced, new_dim)
 
     print('\t - Smoothing mask to reduce skeleton error')
-    img_mask = filters.gaussian(img_mask, sigma=(smooth * scale_xy[0] / 3.0, smooth * scale_xy[1] / 3.0))
-    img_mask = img_mask > 0.5
+    img_mask = filters.gaussian(img_mask, sigma=(smooth * scale_xy[0] / 3.0, smooth * scale_xy[1] / 3.0),
+                                preserve_range=True)
+    img_mask = img_mask > np.mean(img_mask)
     print('\t\t - Using smooth=' + str(smooth) +
           ' coresponding to a gaussian filter of sigma=' +
           str((smooth * scale_xy[0] / 3.0, smooth * scale_xy[0] / 3.0)))
@@ -125,7 +127,7 @@ def generate_2d_network(img_skel, img_dist,
 
 def std_3d_segment(img_2d_stack, img_mask, scale,
                    maxr=15, minr=1, h_pct_r=0.75,
-                   thresh_pct=0.15, ellisoid_method='octants', thresh_num_oct=5, thresh_num_oct_op=3, max_iters=1,
+                   thresh_pct=0.15, ellipsoid_method='octants', thresh_num_oct=5, thresh_num_oct_op=3, max_iters=1,
                    n_theta=4, n_phi=4, ray_trace_mode='uniform', theta='xy', max_escape=1, path_l=1,
                    bth_k=3, wth_k=3, window_size=(7, 15, 15),
                    plot_slices=False, plot_lumen_fill=True, plot_3d=True):
@@ -136,11 +138,10 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
                                                         window_size=window_size, plot_all=plot_slices)
 
     img_3d = img_binary_array.astype('int')
-    img_3d = np.asarray(img_2d_stack).astype('int')
     img_3d, img_mask = st3.pre_process_fill_lumen(img_3d, img_mask)
     lumen_mask_e = st3.fill_lumen_ellipsoid(img_3d, img_mask,
                                             maxr=maxr, minr=minr, h_pct_r=h_pct_r,
-                                            thresh_pct=thresh_pct, method=ellisoid_method,
+                                            thresh_pct=thresh_pct, method=ellipsoid_method,
                                             thresh_num_oct=thresh_num_oct,
                                             thresh_num_oct_op=thresh_num_oct_op,
                                             max_iters=max_iters)
@@ -156,6 +157,7 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
     img_3d_r = img_3d_r > 0
     img_3d_r = st3.scale_and_fill_z(img_3d_r, scale[2])
 
+
     if scale[0] != 1 or scale[1] != 1:
         print(' - Scaling to 1 um / pixel in xy')
         new_img = []
@@ -170,13 +172,19 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
         img_3d_r = np.asarray(new_img)
 
     img_3d_r = np.pad(img_3d_r, 1)
-
     mesh = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False)
+
     skel_3d = st3.skeleton_3d(img_3d_r)
     skel_success = np.sum(skel_3d)
     if skel_success:
         m.generate_surface(skel_3d, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
     else:
         print('WARNING: 3D SKELETONIZATION FAILED')
+
+    img_3d_r = st3.enforce_circular(img_3d_r, h_pct=.6)
+    img_3d_r = np.pad(img_3d_r, 1)
+    m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False)
+    skel_3d = st3.skeleton_3d(img_3d_r)
+    m.generate_surface(skel_3d, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
 
     return img_3d_r, mesh, skel_3d

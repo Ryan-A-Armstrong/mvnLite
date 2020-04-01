@@ -1,0 +1,84 @@
+# MVN Image Analysis Input File
+
+===============
+Required Fields
+===============
+
+# Input image and scale values (um / pixel)
+
+TIF_FILE=/home/ryan/Desktop/mvn-analysis/data/original_sample.tif
+SCALE_X=1.2420
+SCALE_Y=1.2420
+SCALE_Z=1.1400
+
+#### Save Parameters #####
+
+OUTPUT_DIR=/home/ryan/Desktop/mvn-analysis/outputs/
+FILES_2D=1
+MESH_25D=1
+MESH_3D=1
+SKEL_3D=0
+NETWORK=1
+NETWORK_ANALYSIS=1
+
+#### Display Parameters #####
+PLOTS_2D=0
+REVIEW_PLOT_2D=1
+PLOT_SLICES=0
+PLOT_LUMEN_FILL=1
+PLOT_3D=1
+
+
+=====================
+Adjustable Parameters
+=====================
+
+#### 2D Analysis #####
+
+CONTRAST_METHOD=rescale
+THRESH_METHOD=entropy
+RWALK_THRESH_LOW=0
+RWALK_THRESH_HIGH=0
+BTH_K_2D=3
+WTH_K_2D=3
+DILA_GAUSS=0.333
+OPEN_FIRST=0
+OPEN_K_2D=0
+CLOSE_K_2D=5
+CONNECTED_2D=1
+SMOOTH=1
+
+
+#### GRAPH Analysis #####
+
+NEAR_NODE_TOL=5
+LENGTH_TOL=1
+
+#### 3D Analysis #####
+
+BTH_K_3D=3
+WTH_K_3D=3
+OPEN_K_3D=0
+CLOSE_K_3D=5
+
+ELLIPSOID_METHOD=octants
+MAXR=15
+MINR=1
+H_PCT_R=0.5
+THRESH_PCT=0.15
+THRESH_NUM_OCT=5
+THRESH_NUM_OCT_OP=3
+MAX_ITERS=1
+
+RAY_TRACE_MODE=uniform
+EXCLUDE_Z_AXIS=1
+THETA=exclude_z_pole
+N_THETA=16
+N_PHI=16
+MAX_ESCAPE=20
+PATH_L=1
+
+WINDOW_SIZE_X=5
+WINDOW_SIZE_Y=5
+WINDOW_SIZE_Z=5
+

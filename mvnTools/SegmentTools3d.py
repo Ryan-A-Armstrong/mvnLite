@@ -1,6 +1,6 @@
 import warnings
-
 import mvnTools.SegmentTools2d as st2
+from mvnTools.MeshTools2d import smooth_dtransform_auto
 import numpy as np
 from numba import njit, prange
 from scipy import ndimage as ndi
@@ -119,10 +119,14 @@ def fill_lumen_ray_tracing(img_3d, img_mask,
     dims = list(dims)
     dim_z, dim_x, dim_y = dims[0], dims[1], dims[2]
 
-    thetas = np.linspace(-np.pi / 2, np.pi / 2, n_theta)
     phis = np.linspace(0, 2 * np.pi, n_phi + 1)[1::]
     if theta == 'xy':
         thetas = np.array([np.pi/2])
+    elif theta == 'exclude_z_pole':
+        thetas = np.linspace(-np.pi / 2, np.pi / 2, n_theta+1)
+    else:
+        thetas = np.linspace(-np.pi / 2, np.pi / 2, n_theta)
+
     for z in prange(0, dim_z):
         for x in prange(0, dim_x):
             for y in prange(0, dim_y):
@@ -139,6 +143,10 @@ def fill_lumen_ray_tracing(img_3d, img_mask,
                             t = thetas[i_t]
 
                         for i_p in prange(len(phis)):
+                            if theta == 'exclude_z_pole':
+                                if t == 0:
+                                    break
+
                             if free_path:
                                 break
                             if mode == 'random':
@@ -276,6 +284,42 @@ def show_lumen_fill(img_25d, l_fill, l2_fill=None, cmap1='Blues', cmap2='Reds'):
         plt.show()
 
 
+def enforce_circular(img_3d_binary, h_pct=1):
+
+    print(' - Enforcing circular lumens')
+    dist_stack = []
+    for b_plane in img_3d_binary:
+        d_plane = ndi.distance_transform_edt(b_plane)
+        s_plane = morphology.skeletonize(b_plane)
+        d_plane = np.asarray(d_plane)*h_pct
+        s_plane = np.asarray(s_plane, 'int')
+        smoothed_d_plane = smooth_dtransform_auto(d_plane, s_plane, verbose=False)
+        dist_stack.append(smoothed_d_plane)
+
+    dist_array = np.asarray(dist_stack)
+    worst_case_pad = int(np.amax(dist_array) + 0.5)
+    dist_array = np.pad(dist_array, ((worst_case_pad, ), (0, ), (0,)))
+
+    return fill_circular(dist_array, worst_case_pad)
+
+
+@njit(parallel=True)
+def fill_circular(padded_dist_array, pad_r):
+    dim = padded_dist_array.shape
+    img_3d_circ = np.zeros(dim)
+    Z = dim[0]
+
+    for z in prange(pad_r, Z-pad_r):
+        maxr = int(np.ceil(np.amax(padded_dist_array[z])))
+
+        for z_slice in prange(0, maxr):
+            filtered_plane = (maxr - np.ceil(padded_dist_array[z])) <= z_slice
+            img_3d_circ[z + (maxr-z_slice)] = img_3d_circ[z + (maxr-z_slice)] + filtered_plane
+            img_3d_circ[z - (maxr-z_slice)] = img_3d_circ[z - (maxr-z_slice)] + filtered_plane
+
+    return img_3d_circ > 0
+
+
 def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, plot_all=False, window_size=(7, 15, 15)):
     print(' - Converting each z-plane to a binary mask')
     img_2d_stack = np.asarray(img_2d_stack)
@@ -306,3 +350,9 @@ def skeleton_3d(img_3d):
     warnings.filterwarnings('ignore')
     skel_3d = morphology.skeletonize_3d(img_3d)
     return skel_3d
+
+
+def remove_skelton_surfaces(skel_3d):
+    dim = skel_3d.shape
+    deletion_mask = np.ones(skel_3d.shape)
+    pass
