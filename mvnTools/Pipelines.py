@@ -152,11 +152,11 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
                                               max_escape=max_escape, path_l=path_l)
     img_3d_r = img_3d_e + lumen_mask_r
     if plot_lumen_fill:
-        st3.show_lumen_fill(img_3d, lumen_mask_e, l2_fill=lumen_mask_r)
+        #st3.show_lumen_fill(img_3d, lumen_mask_e, l2_fill=lumen_mask_r)
+        pass
 
     img_3d_r = img_3d_r > 0
     img_3d_r = st3.scale_and_fill_z(img_3d_r, scale[2])
-
 
     if scale[0] != 1 or scale[1] != 1:
         print(' - Scaling to 1 um / pixel in xy')
@@ -172,19 +172,41 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
         img_3d_r = np.asarray(new_img)
 
     img_3d_r = np.pad(img_3d_r, 1)
-    mesh = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False)
+
+    mesh, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=False, offscreen=False,
+                                         fill_internals=True)
+
+    img_3d_r = st3.iterative_lumen_mesh_filling(img_3d_r, vert_list, 3)
+    mesh, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=False, offscreen=False,
+                                         fill_internals=True)
 
     skel_3d = st3.skeleton_3d(img_3d_r)
     skel_success = np.sum(skel_3d)
     if skel_success:
-        m.generate_surface(skel_3d, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
+        m.generate_surface(skel_3d, iso=0, grad='ascent', plot=False, offscreen=False, connected=False, clean=False)
     else:
         print('WARNING: 3D SKELETONIZATION FAILED')
 
-    img_3d_r = st3.enforce_circular(img_3d_r, h_pct=.6)
+    img_3d_r = st3.enforce_circular(img_3d_r, h_pct=1)
     img_3d_r = np.pad(img_3d_r, 1)
-    m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False)
+
     skel_3d = st3.skeleton_3d(img_3d_r)
-    m.generate_surface(skel_3d, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
+    #m.generate_surface(skel_3d, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
+
+    plt.imshow(np.sum(skel_3d, axis=0))
+    plt.show()
+    print(np.sum(skel_3d, axis=0))
+
+    skel_3d1 = st3.remove_skel_blobs(skel_3d/np.amax(skel_3d), tol=8)
+    plt.imshow(np.sum(skel_3d1, axis=0))
+    plt.show()
+    m.generate_surface(skel_3d1, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
+
+    skel_3d2 = st3.remove_skelton_surfaces(skel_3d)
+    skel_3d2 = st3.remove_skelton_surfaces(skel_3d2)
+    skel_3d2 = st3.remove_skelton_surfaces(skel_3d2)
+    plt.imshow(np.sum(skel_3d2, axis=0))
+    plt.show()
+    m.generate_surface(skel_3d2, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
 
     return img_3d_r, mesh, skel_3d

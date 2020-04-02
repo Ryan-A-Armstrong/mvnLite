@@ -30,4 +30,5 @@ std_3d_segment(img_2d_stack, img_mask, (1, 1, 4),
 #(2.4859, 2.4859, 6.0000)
 '''
 
-driver = IO('/home/ryan/Desktop/mvn-analysis/inputs/original_sample.txt', echo_inputs=True)
+#driver = IO('/home/ryan/Desktop/mvn-analysis/inputs/original_sample.txt', echo_inputs=True)
+driver = IO('/home/ryan/Desktop/mvn-analysis/inputs/09092019 gel region 10x.txt', echo_inputs=True)

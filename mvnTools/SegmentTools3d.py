@@ -1,8 +1,9 @@
 import warnings
 import mvnTools.SegmentTools2d as st2
 from mvnTools.MeshTools2d import smooth_dtransform_auto
+from mvnTools.Mesh import generate_surface
 import numpy as np
-from numba import njit, prange
+from numba import jit, njit, prange
 from scipy import ndimage as ndi
 from skimage import morphology, transform, filters
 from skimage.filters import threshold_li, threshold_sauvola
@@ -111,8 +112,11 @@ def get_new_pos(old_pos, k,  path_l):
 @njit(parallel=True)
 def fill_lumen_ray_tracing(img_3d, img_mask,
                            n_theta=3, n_phi=3, theta='sweep', mode='uniform', max_escape=1,
-                           path_l=1):
-    print(' - Identifying and filling lumen internal lumen hole via ray tracing')
+                           path_l=1, skel=False):
+    if skel:
+        print(' - Using ray tracing to collapse skeleton blobs')
+    else:
+        print(' - Identifying and filling internal lumen holes via ray tracing')
     dims = img_3d.shape
     lumen_mask = np.zeros(dims, np.int8)
 
@@ -284,6 +288,30 @@ def show_lumen_fill(img_25d, l_fill, l2_fill=None, cmap1='Blues', cmap2='Reds'):
         plt.show()
 
 
+@jit(parallel=True)
+def fill_lumen_meshing(img_3d, vert_list):
+    for v in prange(0, len(vert_list)):
+        mins = np.amin(vert_list[v], axis=0)
+        maxes = np.amax(vert_list[v], axis=0)
+
+        z_min, z_max = int(mins[0]), int(maxes[0])
+        x_min, x_max = int(mins[1]), int(maxes[1])
+        y_min, y_max = int(mins[2]), int(maxes[2])
+
+        img_3d[z_min:z_max+1, x_min:x_max+1, y_min:y_max+1] = 1
+
+    return img_3d
+
+
+def iterative_lumen_mesh_filling(img_3d, vert_list, max_iters):
+    its = 0
+    while len(vert_list) > 0 and its < max_iters:
+        img_3d = fill_lumen_meshing(img_3d, vert_list)
+        mesh, vert_list = generate_surface(img_3d, connected=True, clean=True, fill_internals=True, plot=False)
+
+    return img_3d
+
+
 def enforce_circular(img_3d_binary, h_pct=1):
 
     print(' - Enforcing circular lumens')
@@ -320,6 +348,7 @@ def fill_circular(padded_dist_array, pad_r):
     return img_3d_circ > 0
 
 
+
 def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, plot_all=False, window_size=(7, 15, 15)):
     print(' - Converting each z-plane to a binary mask')
     img_2d_stack = np.asarray(img_2d_stack)
@@ -353,6 +382,32 @@ def skeleton_3d(img_3d):
 
 
 def remove_skelton_surfaces(skel_3d):
-    dim = skel_3d.shape
-    deletion_mask = np.ones(skel_3d.shape)
-    pass
+    skel_3d = skel_3d/np.amax(skel_3d)
+    flat_skel = np.sum(skel_3d, axis=0)
+    flat_skel = flat_skel > 0
+
+    filled_skel = fill_lumen_ray_tracing(skel_3d, flat_skel, n_theta=3, n_phi=3, theta='sweep', mode='uniform',
+                                         max_escape=1,path_l=1, skel=True)
+
+    filled_skel = morphology.dilation(filled_skel)
+    plt.imshow(np.sum(filled_skel, axis=0))
+    plt.show()
+    re_skel = skeleton_3d((skel_3d + filled_skel) > 0)
+
+    return re_skel
+
+
+@njit(parallel=True)
+def remove_skel_blobs(img_skel, tol=9):
+    img_skel = img_skel/np.amax(img_skel)
+    dim = img_skel.shape
+    skel_mask = np.ones(dim)
+    dim = list(dim)
+
+    for z in prange(1, dim[0]-1):
+        for x in prange(1, dim[1]-1):
+            for y in prange(1, dim[2]-1):
+                if img_skel[z, x, y] and np.sum(img_skel[z-1:z+2, x-1:x+2, y-1:y+2]) >= tol:
+                    skel_mask[z, x, y] = 0
+
+    return skel_mask*img_skel
