@@ -5,30 +5,34 @@ Required Fields
 ===============
 
 # Input image and scale values (um / pixel)
-
 TIF_FILE=/home/ryan/Desktop/mvn-analysis/data/OneDrive_2020-03-30/ForRyan/09092019 gel region 10x.tif
-SCALE_X=1
-SCALE_Y=1
-SCALE_Z=2.413631277
+SCALE_X=2.4859
+SCALE_Y=2.4859
+SCALE_Z=6.0000
 
-MATH_SCALE=2.4859
+#### Computation Piplines #####
+ANALYZE_2D=0
+ANALYZE_25D=0
+NETWORK_2D=0
+
+ANALYZE_3D=0
+NETWORK_3D=0
 
 #### Save Parameters #####
-
 OUTPUT_DIR=/home/ryan/Desktop/mvn-analysis/outputs/
 FILES_2D=0
 MESH_25D=0
-MESH_3D=1
+MESH_3D=0
 SKEL_3D=0
 NETWORK=0
 NETWORK_ANALYSIS=0
 
 #### Display Parameters #####
 PLOTS_2D=0
-REVIEW_PLOT_2D=1
+REVIEW_PLOT_2D=0
 PLOT_SLICES=0
-PLOT_LUMEN_FILL=1
-PLOT_3D=1
+PLOT_LUMEN_FILL=0
+PLOT_3D=0
 
 
 =====================
@@ -36,7 +40,6 @@ Adjustable Parameters
 =====================
 
 #### 2D Analysis #####
-
 CONTRAST_METHOD=equalize
 THRESH_METHOD=random-walk
 RWALK_THRESH_LOW=0.45
@@ -51,7 +54,7 @@ CONNECTED_2D=1
 SMOOTH=1
 
 
-#### GRAPH Analysis #####
+#### 2D Graph Analysis #####
 
 NEAR_NODE_TOL=5
 LENGTH_TOL=1
@@ -79,6 +82,14 @@ N_THETA=16
 N_PHI=16
 MAX_ESCAPE=20
 PATH_L=1
+
+ENFORCE_ELLIPSOID_LUMEN=1
+FILL_LUMEN_MESHING=1
+MAX_MESHING_ITERS=1
+
+SQUEEZE_SKEL_BLOBS=1
+REMOVE_SKEL_SURFACES=1
+
 
 WINDOW_SIZE_X=5
 WINDOW_SIZE_Y=5

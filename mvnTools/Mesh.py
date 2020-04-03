@@ -1,9 +1,11 @@
-import pymesh
-from mvnTools import Display as d
-from skimage import measure
-import wildmeshing as wm
 import os
+
 import meshio
+import pymesh
+import wildmeshing as wm
+from skimage import measure
+
+from mvnTools import Display as d
 
 
 def clean_mesh(mesh, connected=True, fill_internals=False):
@@ -52,19 +54,27 @@ def generate_surface(img_3d, iso=0, grad='descent', plot=True, offscreen=False,
 
 
 def generate_lumen_tetmsh(path_to_surface_obj, path_to_volume_msh='', removeOBJ=False):
+    print('Generating lumen tetmesh via tetwild')
+
     if path_to_volume_msh == '':
         path_to_volume_msh = path_to_volume_msh.split('.')[0] + '.msh'
 
-    wm.Tetrahedralizer(path_to_surface_obj, path_to_volume_msh)
+    wm.tetrahedralize(path_to_surface_obj, path_to_volume_msh, mute_log=True)
+    print('Path to msh:\n' + path_to_volume_msh)
 
     if removeOBJ:
         os.remove(path_to_surface_obj)
 
+
 def create_ExodusII_file(path_to_msh, path_to_e='', removeMSH=False):
-    if path_to_msh == '':
+    print('Converting .msh to .e for stokes flow')
+    if path_to_e == '':
         path_to_e = path_to_msh.split('.')[0] + '.e'
 
-    meshio.convert(path_to_msh, path_to_e)
+    m = meshio.read(path_to_msh)
+    meshio.exodus.write(path_to_e, m)
+
+    print('\nPath to exodus:\n' + path_to_e)
 
     if removeMSH:
         os.remove(path_to_msh)

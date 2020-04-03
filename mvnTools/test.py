@@ -31,4 +31,8 @@ std_3d_segment(img_2d_stack, img_mask, (1, 1, 4),
 '''
 
 #driver = IO('/home/ryan/Desktop/mvn-analysis/inputs/original_sample.txt', echo_inputs=True)
-driver = IO('/home/ryan/Desktop/mvn-analysis/inputs/09092019 gel region 10x.txt', echo_inputs=True)
+#driver = IO('/home/ryan/Desktop/mvn-analysis/inputs/09092019 gel region 10x.txt', echo_inputs=True)
+
+from mvnTools.Mesh import create_ExodusII_file
+
+create_ExodusII_file('/home/ryan/Desktop/mvn-analysis/outputs/volume-meshes/original_sample-3d.msh', path_to_e='')

@@ -1,4 +1,7 @@
+import os
+
 import numpy as np
+import pymesh
 from skimage import transform, filters
 from skimage.morphology import dilation, closing
 
@@ -36,7 +39,7 @@ def std_2d_segment(tif_file, scale_xy,
                    save_all_intermediates=False):
     img_original = ts(tif_file, page_list=False, flat=True)
     img_original_flat = img_original.get_flat()
-    scale_xy = (img_original.downsample_factor*scale_xy[0], img_original.downsample_factor*scale_xy[1])
+    scale_xy = (img_original.downsample_factor * scale_xy[0], img_original.downsample_factor * scale_xy[1])
 
     enhance_contrasts = st2.contrasts(img_original_flat, plot=all_plots, adpt=0.04)
     img_enhanced = enhance_contrasts[contrasts[contrast_method]]
@@ -94,12 +97,40 @@ def std_2d_segment(tif_file, scale_xy,
     return img_enhanced, img_mask, img_skel, img_dist, img_original
 
 
-def segment_2d_to_meshes(img_dist, img_skel, all_plots=True):
+def segment_2d_to_meshes(img_dist, img_skel,
+                         all_plots=True,
+                         save_surface_meshes=True, generate_volume_meshes=False,
+                         output_dir='', name=''):
+    if save_surface_meshes:
+        if not os.path.isdir(output_dir + 'surface-meshes/'):
+            os.mkdir(output_dir + 'surface-meshes/')
+
+    if generate_volume_meshes:
+        if not os.path.isdir(output_dir + 'volume-meshes/'):
+            os.mkdir(output_dir + 'volume-meshes/')
+
     img_dist = mt2.smooth_dtransform_auto(img_dist, img_skel)
     img_dist = np.pad(img_dist, 1, 'constant', constant_values=0)
     img_3d = mt2.img_dist_to_img_volume(img_dist)
 
     mesh = m.generate_surface(img_3d, iso=0, grad='ascent', plot=all_plots, offscreen=False)
+
+    if save_surface_meshes:
+        filepath = output_dir + 'surface-meshes/' + name + '-25d'
+        pymesh.save_mesh(filepath + '.obj', mesh)
+
+    if generate_volume_meshes:
+        p1 = output_dir + 'surface-meshes/' + name + '-25d.obj'
+
+        if os.path.isfile(p1):
+            m.generate_lumen_tetmsh(p1, path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-25d.msh',
+                                    removeOBJ=False)
+        else:
+            pymesh.save_mesh(p1, mesh)
+            m.generate_lumen_tetmsh(p1, path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-25d.msh',
+                                    removeOBJ=True)
+        m.create_ExodusII_file(output_dir + 'volume-meshes/' + name + '-25d.msh', path_to_e='', removeMSH=False)
+
     return mesh
 
 
@@ -130,9 +161,20 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
                    thresh_pct=0.15, ellipsoid_method='octants', thresh_num_oct=5, thresh_num_oct_op=3, max_iters=1,
                    n_theta=4, n_phi=4, ray_trace_mode='uniform', theta='xy', max_escape=1, path_l=1,
                    bth_k=3, wth_k=3, window_size=(7, 15, 15),
-                   enforce_circular=True, fill_lumen_meshing=True, max_meshing_iters=3,
+                   enforce_circular=True, h_pct_ellip=1,
+                   fill_lumen_meshing=True, max_meshing_iters=3,
                    squeeze_skel_blobs=True, remove_skel_surf=True, surf_tol=5,
-                   plot_slices=False, plot_lumen_fill=True, plot_3d=True):
+                   plot_slices=False, plot_lumen_fill=True, plot_3d=True,
+                   output_dir='', name='',
+                   save_surface_meshes=True, generate_volume_meshes=False):
+    if save_surface_meshes:
+        if not os.path.isdir(output_dir + 'surface-meshes/'):
+            os.mkdir(output_dir + 'surface-meshes/')
+
+    if generate_volume_meshes:
+        if not os.path.isdir(output_dir + 'volume-meshes/'):
+            os.mkdir(output_dir + 'volume-meshes/')
+
     print('\n============')
     print('3d analysis:')
     print('============')
@@ -181,6 +223,10 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
     mesh1, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False,
                                           fill_internals=True, title="'Honest' scaling (no extrapolation)")
 
+    if save_surface_meshes:
+        filepath = output_dir + 'surface-meshes/' + name + '-3d'
+        pymesh.save_mesh(filepath + '.obj', mesh1)
+
     skel_3d1 = st3.skeleton_3d(img_3d_r, squeeze_blobs=squeeze_skel_blobs, remove_surfaces=remove_skel_surf,
                                surface_tol=surf_tol)
     skel_3d1 = closing(skel_3d1)
@@ -191,7 +237,7 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
     skel_3d2 = None
 
     if enforce_circular:
-        img_3d_r = st3.enforce_circular(img_3d_r, h_pct=1)
+        img_3d_r = st3.enforce_circular(img_3d_r, h_pct=h_pct_ellip)
         img_3d_r = np.pad(img_3d_r, 1)
 
         if fill_lumen_meshing:
@@ -202,11 +248,43 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
         mesh2, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False,
                                               fill_internals=True, title="Ellipsoid enforced scaling")
 
+        if save_surface_meshes:
+            filepath = output_dir + 'surface-meshes/' + name + 'enforce-ellip-' + str(h_pct_ellip)
+            pymesh.save_mesh(filepath + '.obj', mesh2)
+
         skel_3d2 = st3.skeleton_3d(img_3d_r, squeeze_blobs=squeeze_skel_blobs, remove_surfaces=remove_skel_surf,
                                    surface_tol=surf_tol)
         skel_3d2 = closing(skel_3d2)
 
         if plot_3d:
             m.generate_surface(skel_3d2, connected=False, clean=True, title="Ellipsoid enforced scaling")
+
+    if generate_volume_meshes:
+        p1 = output_dir + 'surface-meshes/' + name + '-3d.obj'
+        p2 = output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str(h_pct_ellip) + '.obj'
+
+        if os.path.isfile(p1):
+            m.generate_lumen_tetmsh(p1, path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d.msh',
+                                    removeOBJ=False)
+        else:
+            pymesh.save_mesh(p1, mesh1)
+            m.generate_lumen_tetmsh(p1, path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d.msh',
+                                    removeOBJ=True)
+
+        m.create_ExodusII_file(output_dir + 'volume-meshes/' + name + '-3d.msh', path_to_e='', removeMSH=False)
+
+        if enforce_circular and os.path.isfile(p2):
+            m.generate_lumen_tetmsh(p2, path_to_volume_msh=output_dir + 'volume-meshes/' + name +
+                                                           '-enforce-ellip-' + str(h_pct_ellip) + '.msh',
+                                    removeOBJ=False)
+        elif enforce_circular:
+            pymesh.save_mesh(p2, mesh2)
+            m.generate_lumen_tetmsh(p2, path_to_volume_msh=output_dir + 'volume-meshes/' + name +
+                                                           '-enforce-ellip-' + str(h_pct_ellip) + '.msh',
+                                    removeOBJ=True)
+
+        if enforce_circular:
+            m.create_ExodusII_file(output_dir + 'volume-meshes/' + name +
+                                   '-enforce-ellip-' + str(h_pct_ellip) + '.msh', path_to_e='', removeMSH=False)
 
     return img_3d_r, mesh1, mesh2, skel_3d1, skel_3d2
