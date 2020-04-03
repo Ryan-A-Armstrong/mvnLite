@@ -3,13 +3,14 @@ import warnings
 import numpy as np
 import ntpath
 from PIL import Image
-from skimage import img_as_uint
+from skimage import img_as_uint, transform
 
 
 class TifStack:
     path_to_tif = ''
     tif_pages = None
     flattened = None
+    downsample_factor = 1
 
     def __init__(self, _path_to_tif, page_list=True, flat=True):
         self.path_to_tif = _path_to_tif
@@ -32,6 +33,13 @@ class TifStack:
             try:
                 im.seek(i)
                 image = np.array(im)
+                dim = image.shape
+
+                if dim[0] > 512 or dim[1] > 512:
+                    self.downsample_factor = max(dim[0], dim[1])/512
+                    image = transform.resize(image,
+                                             int(dim[0]/self.downsample_factor), int(dim[1]/self.downsample_factor))
+
             except EOFError:
                 break
             pages.append(image)

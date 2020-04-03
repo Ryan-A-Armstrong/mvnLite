@@ -36,6 +36,7 @@ def std_2d_segment(tif_file, scale_xy,
                    save_all_intermediates=False):
     img_original = ts(tif_file, page_list=False, flat=True)
     img_original_flat = img_original.get_flat()
+    scale_xy = (img_original.downsample_factor*scale_xy[0], img_original.downsample_factor*scale_xy[1])
 
     enhance_contrasts = st2.contrasts(img_original_flat, plot=all_plots, adpt=0.04)
     img_enhanced = enhance_contrasts[contrasts[contrast_method]]
