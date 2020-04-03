@@ -79,10 +79,12 @@ def visualize_dist(dist, offscreen=False):
     mlab.show()
 
 
-def visualize_mesh(mesh_data, offscreen=False):
+def visualize_mesh(mesh_data, offscreen=False, title=''):
     mlab.options.offscreen = offscreen
     verts = mesh_data[0]
     faces = mesh_data[1]
+    if len(title) > 0:
+        mlab.figure(title)
     mlab.triangular_mesh([vert[0] for vert in verts],
                          [vert[1] for vert in verts],
                          [vert[2] for vert in verts], faces)

@@ -17,7 +17,7 @@ def clean_mesh(mesh, connected=True, fill_internals=False):
     if connected or fill_internals:
         mesh_list = pymesh.separate_mesh(mesh, 'auto')
         max_verts = 0
-        print('Total number of meshes (ideally 1): %d' % len(mesh_list))
+        print(' - Total number of meshes (ideally 1): %d' % len(mesh_list))
         for mesh_obj in mesh_list:
             nverts = mesh_obj.num_vertices
             if nverts > max_verts:
@@ -34,7 +34,8 @@ def clean_mesh(mesh, connected=True, fill_internals=False):
     return mesh, vert_list
 
 
-def generate_surface(img_3d, iso=0, grad='descent', plot=True, offscreen=False, connected=True, clean=True, fill_internals=False ):
+def generate_surface(img_3d, iso=0, grad='descent', plot=True, offscreen=False,
+                     connected=True, clean=True, fill_internals=False, title=''):
     print('\t - Generating surface mesh')
     verts, faces, normals, values = measure.marching_cubes_lewiner(img_3d, iso, gradient_direction=grad)
     mesh = pymesh.form_mesh(verts, faces)
@@ -45,7 +46,7 @@ def generate_surface(img_3d, iso=0, grad='descent', plot=True, offscreen=False, 
     verts = mesh.vertices
     faces = mesh.faces
     if plot:
-        d.visualize_mesh((verts, faces), offscreen=offscreen)
+        d.visualize_mesh((verts, faces), offscreen=offscreen, title=title)
 
     return mesh, vert_list
 

@@ -1,16 +1,14 @@
-from mvnTools.TifStack import TifStack as ts
-from mvnTools import SegmentTools2d as st2
-from mvnTools import SegmentTools3d as st3
-from mvnTools import MeshTools2d as mt2
-from mvnTools import Mesh as m
-from mvnTools import NetworkTools2d as nw2
-from mvnTools import Display as d
 import numpy as np
 from skimage import transform, filters
 from skimage.morphology import dilation, closing
-from mayavi.mlab import *
-from timeit import default_timer as timer
-from matplotlib import pyplot as plt
+
+from mvnTools import Display as d
+from mvnTools import Mesh as m
+from mvnTools import MeshTools2d as mt2
+from mvnTools import NetworkTools2d as nw2
+from mvnTools import SegmentTools2d as st2
+from mvnTools import SegmentTools3d as st3
+from mvnTools.TifStack import TifStack as ts
 
 contrasts = {'original': 0, 'rescale': 1, 'equalize': 2, 'adaptive': 3}
 
@@ -33,8 +31,9 @@ def std_2d_segment(tif_file, scale_xy,
                    connected=False,
                    smooth=1,
                    all_plots=True,
-                   review_plot=True):
-
+                   review_plot=True,
+                   save_all_outputs=True,
+                   save_all_intermediates=False):
     img_original = ts(tif_file, page_list=False, flat=True)
     img_original_flat = img_original.get_flat()
 
@@ -130,6 +129,8 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
                    thresh_pct=0.15, ellipsoid_method='octants', thresh_num_oct=5, thresh_num_oct_op=3, max_iters=1,
                    n_theta=4, n_phi=4, ray_trace_mode='uniform', theta='xy', max_escape=1, path_l=1,
                    bth_k=3, wth_k=3, window_size=(7, 15, 15),
+                   enforce_circular=True, fill_lumen_meshing=True, max_meshing_iters=3,
+                   squeeze_skel_blobs=True, remove_skel_surf=True, surf_tol=5,
                    plot_slices=False, plot_lumen_fill=True, plot_3d=True):
     print('\n============')
     print('3d analysis:')
@@ -152,8 +153,7 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
                                               max_escape=max_escape, path_l=path_l)
     img_3d_r = img_3d_e + lumen_mask_r
     if plot_lumen_fill:
-        #st3.show_lumen_fill(img_3d, lumen_mask_e, l2_fill=lumen_mask_r)
-        pass
+        st3.show_lumen_fill(img_3d, lumen_mask_e, l2_fill=lumen_mask_r)
 
     img_3d_r = img_3d_r > 0
     img_3d_r = st3.scale_and_fill_z(img_3d_r, scale[2])
@@ -172,41 +172,40 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
         img_3d_r = np.asarray(new_img)
 
     img_3d_r = np.pad(img_3d_r, 1)
+    if fill_lumen_meshing:
+        mesh, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=False, offscreen=True,
+                                             fill_internals=True)
+        img_3d_r = st3.iterative_lumen_mesh_filling(img_3d_r, vert_list, max_meshing_iters)
 
-    mesh, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=False, offscreen=False,
-                                         fill_internals=True)
+    mesh1, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False,
+                                          fill_internals=True, title="'Honest' scaling (no extrapolation)")
 
-    img_3d_r = st3.iterative_lumen_mesh_filling(img_3d_r, vert_list, 3)
-    mesh, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=False, offscreen=False,
-                                         fill_internals=True)
+    skel_3d1 = st3.skeleton_3d(img_3d_r, squeeze_blobs=squeeze_skel_blobs, remove_surfaces=remove_skel_surf,
+                               surface_tol=surf_tol)
+    skel_3d1 = closing(skel_3d1)
+    if plot_3d:
+        m.generate_surface(skel_3d1, connected=False, clean=True, title="'Honest' scaling (no extrapolation)")
 
-    skel_3d = st3.skeleton_3d(img_3d_r)
-    skel_success = np.sum(skel_3d)
-    if skel_success:
-        m.generate_surface(skel_3d, iso=0, grad='ascent', plot=False, offscreen=False, connected=False, clean=False)
-    else:
-        print('WARNING: 3D SKELETONIZATION FAILED')
+    mesh2 = None
+    skel_3d2 = None
 
-    img_3d_r = st3.enforce_circular(img_3d_r, h_pct=1)
-    img_3d_r = np.pad(img_3d_r, 1)
+    if enforce_circular:
+        img_3d_r = st3.enforce_circular(img_3d_r, h_pct=1)
+        img_3d_r = np.pad(img_3d_r, 1)
 
-    skel_3d = st3.skeleton_3d(img_3d_r)
-    #m.generate_surface(skel_3d, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
+        if fill_lumen_meshing:
+            mesh, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=False, offscreen=True,
+                                                 fill_internals=True)
+            img_3d_r = st3.iterative_lumen_mesh_filling(img_3d_r, vert_list, 3)
 
-    plt.imshow(np.sum(skel_3d, axis=0))
-    plt.show()
-    print(np.sum(skel_3d, axis=0))
+        mesh2, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False,
+                                              fill_internals=True, title="Ellipsoid enforced scaling")
 
-    skel_3d1 = st3.remove_skel_blobs(skel_3d/np.amax(skel_3d), tol=8)
-    plt.imshow(np.sum(skel_3d1, axis=0))
-    plt.show()
-    m.generate_surface(skel_3d1, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
+        skel_3d2 = st3.skeleton_3d(img_3d_r, squeeze_blobs=squeeze_skel_blobs, remove_surfaces=remove_skel_surf,
+                                   surface_tol=surf_tol)
+        skel_3d2 = closing(skel_3d2)
 
-    skel_3d2 = st3.remove_skelton_surfaces(skel_3d)
-    skel_3d2 = st3.remove_skelton_surfaces(skel_3d2)
-    skel_3d2 = st3.remove_skelton_surfaces(skel_3d2)
-    plt.imshow(np.sum(skel_3d2, axis=0))
-    plt.show()
-    m.generate_surface(skel_3d2, iso=0, grad='ascent', plot=plot_3d, offscreen=False, connected=False, clean=False)
+        if plot_3d:
+            m.generate_surface(skel_3d2, connected=False, clean=True, title="Ellipsoid enforced scaling")
 
-    return img_3d_r, mesh, skel_3d
+    return img_3d_r, mesh1, mesh2, skel_3d1, skel_3d2

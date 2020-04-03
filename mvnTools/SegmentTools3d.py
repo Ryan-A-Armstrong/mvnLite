@@ -265,7 +265,6 @@ def fill_lumen_ellipsoid(img_3d, img_mask,
 
 
 def show_lumen_fill(img_25d, l_fill, l2_fill=None, cmap1='Blues', cmap2='Reds'):
-
     dims = img_25d.shape
     for p in range(0, dims[0]):
         fig, ax = plt.subplots(ncols=3, figsize=(15, 8))
@@ -304,6 +303,7 @@ def fill_lumen_meshing(img_3d, vert_list):
 
 
 def iterative_lumen_mesh_filling(img_3d, vert_list, max_iters):
+    print('Filling lumen holes by iteratively meshing')
     its = 0
     while len(vert_list) > 0 and its < max_iters:
         img_3d = fill_lumen_meshing(img_3d, vert_list)
@@ -313,8 +313,7 @@ def iterative_lumen_mesh_filling(img_3d, vert_list, max_iters):
 
 
 def enforce_circular(img_3d_binary, h_pct=1):
-
-    print(' - Enforcing circular lumens')
+    print(' - Enforcing ellipsoid lumens with height = %.3f*radius_xy' % h_pct)
     dist_stack = []
     for b_plane in img_3d_binary:
         d_plane = ndi.distance_transform_edt(b_plane)
@@ -374,14 +373,23 @@ def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, plot_all=False,
     return img_out
 
 
-def skeleton_3d(img_3d):
+def skeleton_3d(img_3d, squeeze_blobs=False, remove_surfaces=False, surface_tol=5):
     print(' - Thinning to 3D skeleton.')
     warnings.filterwarnings('ignore')
     skel_3d = morphology.skeletonize_3d(img_3d)
+
+    if squeeze_blobs:
+        skel_3d = squeeze_skelton_blobs(skel_3d)
+
+    if remove_surfaces:
+        skel_3d = remove_skel_surfaces(skel_3d, surface_tol)
+
     return skel_3d
 
 
-def remove_skelton_surfaces(skel_3d):
+def squeeze_skelton_blobs(skel_3d):
+    print(' - Filling voxels within closed surfaces in skeleton and re-thinning')
+    print('\t\t WARNING: This may create parallel skeleton paths. Consider cleaning in network instead')
     skel_3d = skel_3d/np.amax(skel_3d)
     flat_skel = np.sum(skel_3d, axis=0)
     flat_skel = flat_skel > 0
@@ -389,16 +397,17 @@ def remove_skelton_surfaces(skel_3d):
     filled_skel = fill_lumen_ray_tracing(skel_3d, flat_skel, n_theta=3, n_phi=3, theta='sweep', mode='uniform',
                                          max_escape=1,path_l=1, skel=True)
 
+    filled_skel = morphology.closing(filled_skel)
     filled_skel = morphology.dilation(filled_skel)
-    plt.imshow(np.sum(filled_skel, axis=0))
-    plt.show()
     re_skel = skeleton_3d((skel_3d + filled_skel) > 0)
 
     return re_skel
 
 
 @njit(parallel=True)
-def remove_skel_blobs(img_skel, tol=9):
+def remove_skel_surfaces(img_skel, tol=5):
+    print(' - Removing residual surfaces from skeletonization')
+    print('\t\t WARNING: This may disconnect regions. Consider cleaning in network instead')
     img_skel = img_skel/np.amax(img_skel)
     dim = img_skel.shape
     skel_mask = np.ones(dim)

@@ -210,7 +210,7 @@ def distance_transform(img_binary, plot=True, verbose=True):
 
 def get_largest_connected_region(img_binary, plot=True, verbose=True):
     if verbose:
-        print('\t - Retaining only the largest connected region')
+        print(' - Retaining only the largest connected region')
     img_lab = measure.label(img_binary, connectivity=2)
     regions = measure.regionprops(img_lab)
     val_max = 0

@@ -106,7 +106,7 @@ class IO:
                         'WINDOW_SIZE_Y=': int,
                         'WINDOW_SIZE_Z=': int}
 
-    def __init__(self, input_file, echo_inputs=False):
+    def __init__(self, input_file, echo_inputs=False, silent_mode=False):
         with open(input_file, 'r') as f:
             inputs = f.read()
 
@@ -115,10 +115,7 @@ class IO:
                 index_end_line = inputs.index('\n', index_param)
                 val = inputs[index_param + len(param):index_end_line]
 
-                if self.input_dic_setter[param] is str:
-                    inputs[index_param + len(param):index_end_line]
-
-                elif self.input_dic_setter[param] is int:
+                if self.input_dic_setter[param] is int:
                     val = int(val)
 
                 elif self.input_dic_setter[param] is float:
@@ -130,6 +127,14 @@ class IO:
                 self.input_dic[param[:-1]] = val
 
         f.close()
+
+        if silent_mode:
+            self.input_dic['PLOTS_2D'] = False
+            self.input_dic['REVIEW_PLOT_2D'] = False
+            self.input_dic['PLOT_SLICES'] = False
+            self.input_dic['PLOT_LUMEN_FILL'] = False
+            self.input_dic['PLOT_3D'] = False
+
         if echo_inputs:
             for ins in self.input_dic:
                 print(ins + '='  + str(self.input_dic[ins]))
