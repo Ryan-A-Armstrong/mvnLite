@@ -1,0 +1,130 @@
+# MVN Image Analysis Input File Template
+
+===============
+Required Fields
+===============
+
+# Input image and scale values (um / pixel)
+
+TIF_FILE=
+SCALE_X=
+SCALE_Y=
+SCALE_Z=
+
+#### Piplelines to Run ####
+SEGMENT_2D=0
+MESH_25D=0
+SEGMENT_3D=0
+MESH_3D=0
+NETWORK_2D=0
+NETOWRK_3D=0
+
+#### Save Parameters #####
+
+OUTPUT_DIR=
+
+SAVE_2D_MASK=1
+SAVE_2D_SKEL=1
+SAVE_2D_DIST=1
+SAVE_2D_DISPLAY=1
+SAVE_2D_REVIEW=1
+
+SAVE_25D_MESH=1
+GENERATE_25D_VOLUME=0
+
+SAVE_3D_MASK=1
+SAVE_3D_SKEL=1
+
+SAVE_3D_MESH=1
+GENERATE_3D_VOLUME=0
+SAVE_3D_MESH_ROUND=1
+GENERATE_3D_ROUND_VOLUME=0
+
+SAVE_2D_NETWORK=1
+SAVE_3D_NETWORK=1
+
+
+#### Display Parameters #####
+
+PLOTS_2D=0
+REVIEW_PLOT_2D=0
+PLOT_SLICES=0
+PLOT_LUMEN_FILL=0
+PLOT_3D=0
+
+
+=====================
+Adjustable Parameters
+=====================
+
+#### 2D Analysis #####
+
+# original, rescale, equalize, adaptive
+CONTRAST_METHOD=rescale
+
+# entropy, random-walk
+THRESH_METHOD=entropy
+
+RWALK_THRESH_LOW=0.75
+RWALK_THRESH_HIGH=0.8
+BTH_K_2D=3
+WTH_K_2D=3
+DILA_GAUSS=0.333
+OPEN_FIRST=0
+OPEN_K_2D=0
+CLOSE_K_2D=5
+CONNECTED_2D=1
+SMOOTH=1
+
+CONNECTED_25D=1
+
+
+#### GRAPH Analysis #####
+
+NEAR_NODE_TOL=5
+LENGTH_TOL=1
+
+#### 3D Analysis #####
+# original, rescale, equalize, adaptive
+SLICE_CONTRAST=original
+
+# sauvola, none
+PRE_THRESH=sauvola
+
+BTH_K_3D=3
+WTH_K_3D=3
+OPEN_K_3D=0
+CLOSE_K_3D=5
+
+# octants, pairs, ball
+ELLIPSOID_METHOD=octants
+
+MAXR=15
+MINR=1
+H_PCT_R=0.5
+THRESH_PCT=0.15
+THRESH_NUM_OCT=5
+THRESH_NUM_OCT_OP=3
+MAX_ITERS=1
+
+# uniform, random
+RAY_TRACE_MODE=uniform
+
+# sweep, xy, exclude_z_pole
+THETA=exclude_z_pole
+
+N_THETA=6
+N_PHI=6
+MAX_ESCAPE=2
+PATH_L=1
+
+FILL_LUMEN_MESHING=1
+FILL_LUMEN_MESHING_MAX_ITS=3
+
+ENFORCE_ELLIPSOID_LUMEN=1
+H_PCT_ELLIPSOID=1.00
+
+WINDOW_SIZE_X=15
+WINDOW_SIZE_Y=15
+WINDOW_SIZE_Z=7
+
