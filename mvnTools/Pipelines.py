@@ -2,7 +2,9 @@ import os
 
 import numpy as np
 import pymesh
+from matplotlib import pyplot as plt
 from skimage import transform, filters
+from skimage.external import tifffile as tif
 from skimage.morphology import dilation, closing
 
 from mvnTools import Display as d
@@ -17,26 +19,21 @@ contrasts = {'original': 0, 'rescale': 1, 'equalize': 2, 'adaptive': 3}
 
 
 class Pipelines:
-    def __init__(self, image_array):
+    def __init__(self):
         pass
 
 
 def std_2d_segment(tif_file, scale_xy,
-                   contrast_method='rescale',
-                   thresh_method='entropy',
-                   rwalk_thresh=(0, 0),
-                   bth_k=3,
-                   wth_k=3,
-                   dila_gauss=1 / 3,
-                   open_first=False,
-                   open_k=0,
-                   close_k=5,
-                   connected=False,
-                   smooth=1,
-                   all_plots=True,
-                   review_plot=True,
-                   save_all_outputs=True,
-                   save_all_intermediates=False):
+                   contrast_method='rescale', thresh_method='entropy', rwalk_thresh=(0, 0),
+                   bth_k=3, wth_k=3, dila_gauss=0.333,
+                   open_first=False, open_k=0, close_k=5,
+                   connected2D=False,
+                   smooth=1, all_plots=True, review_plot=True,
+                   output_dir='', name='',
+                   save_mask=False, save_skel=False, save_dist=False, save_disp=False, save_review=False,
+                   generate_mesh_25=True,
+                   connected_mesh=True, connected_vol=False,
+                   plot_25d=True, save_volume_mask=True, save_surface_meshes=True, generate_volume_meshes=False):
     img_original = ts(tif_file, page_list=False, flat=True)
     img_original_flat = img_original.get_flat()
     scale_xy = (img_original.downsample_factor * scale_xy[0], img_original.downsample_factor * scale_xy[1])
@@ -69,7 +66,7 @@ def std_2d_segment(tif_file, scale_xy,
         img_mask = st2.close_binary(img_mask, k=close_k, plot=all_plots)
         img_mask = st2.open_binary(img_mask, k=open_k, plot=all_plots)
 
-    if connected:
+    if connected2D:
         img_mask = st2.get_largest_connected_region(img_mask, plot=all_plots)
 
     if scale_xy[0] != 1 or scale_xy[1] != 1:
@@ -94,34 +91,77 @@ def std_2d_segment(tif_file, scale_xy,
     if all_plots or review_plot:
         d.review_2d_results(img_enhanced, img_mask, dilation(img_skel), img_dist)
 
+    if save_mask:
+        if not os.path.isdir(output_dir + 'masks2D/'):
+            os.mkdir(output_dir + 'masks2D/')
+        plt.imsave(output_dir + 'masks2D/' + name + '.png', img_mask, cmap='gray')
+
+    if save_skel:
+        if not os.path.isdir(output_dir + 'skels2D/'):
+            os.mkdir(output_dir + 'skels2D/')
+        plt.imsave(output_dir + 'skels2D/' + name + '.png', img_skel, cmap='gray')
+
+    if save_dist:
+        if not os.path.isdir(output_dir + 'distance2D/'):
+            os.mkdir(output_dir + 'distance2D/')
+        plt.imsave(output_dir + 'distance2D/' + name + '.png', img_dist, cmap='gray')
+
+    if save_disp:
+        if not os.path.isdir(output_dir + 'display/'):
+            os.mkdir(output_dir + 'display/')
+        plt.imsave(output_dir + 'display/' + name + '.png', img_enhanced, cmap='gray')
+
+    if save_review:
+        if not os.path.isdir(output_dir + 'review-segment2D/'):
+            os.mkdir(output_dir + 'review-segment2D/')
+        d.review_2d_results(img_enhanced, img_mask, dilation(img_skel), img_dist,
+                            saving=True).savefig(output_dir + 'review-segment2D/' + name + '.png')
+
+    if generate_mesh_25:
+        segment_2d_to_meshes(img_dist, img_skel, connected_mesh=connected_mesh, connected_vol=connected_vol,
+                             plot_25d=plot_25d,
+                             save_volume_mask=save_volume_mask,
+                             save_surface_meshes=save_surface_meshes, generate_volume_meshes=generate_volume_meshes,
+                             output_dir=output_dir, name=name)
+
     return img_enhanced, img_mask, img_skel, img_dist, img_original
 
 
-def segment_2d_to_meshes(img_dist, img_skel,
-                         all_plots=True,
+def segment_2d_to_meshes(img_dist, img_skel, connected_mesh=True, connected_vol=False,
+                         plot_25d=True,
+                         save_volume_mask=True,
                          save_surface_meshes=True, generate_volume_meshes=False,
                          output_dir='', name=''):
+    img_dist = mt2.smooth_dtransform_auto(img_dist, img_skel)
+    img_dist = np.pad(img_dist, 1, 'constant', constant_values=0)
+    img_3d = mt2.img_dist_to_img_volume(img_dist)
+
+    if save_volume_mask:
+        if not os.path.isdir(output_dir + 'masks3D/'):
+            os.mkdir(output_dir + 'masks3D/')
+        img_3d_save = img_3d.copy()
+        if connected_vol:
+            img_3d_save = st2.get_largest_connected_region(img_3d_save, plot=False, verbose=False)
+        tif.imsave(output_dir + 'masks3D/' + name + '-25d.tif', np.asarray(img_3d_save, 'uint8'), bigtiff=True)
+
+    if connected_mesh:
+        img_3d = st2.get_largest_connected_region(img_3d, plot=False, verbose=False)
+
+    mesh, verts = m.generate_surface(img_3d, iso=0, grad='ascent',
+                                     plot=plot_25d, connected=connected_mesh, clean=True, offscreen=False)
+
     if save_surface_meshes:
         if not os.path.isdir(output_dir + 'surface-meshes/'):
             os.mkdir(output_dir + 'surface-meshes/')
+
+        filepath = output_dir + 'surface-meshes/' + name + '-25d'
+        pymesh.save_mesh(filepath + '.obj', mesh)
 
     if generate_volume_meshes:
         if not os.path.isdir(output_dir + 'volume-meshes/'):
             os.mkdir(output_dir + 'volume-meshes/')
 
-    img_dist = mt2.smooth_dtransform_auto(img_dist, img_skel)
-    img_dist = np.pad(img_dist, 1, 'constant', constant_values=0)
-    img_3d = mt2.img_dist_to_img_volume(img_dist)
-
-    mesh = m.generate_surface(img_3d, iso=0, grad='ascent', plot=all_plots, offscreen=False)
-
-    if save_surface_meshes:
-        filepath = output_dir + 'surface-meshes/' + name + '-25d'
-        pymesh.save_mesh(filepath + '.obj', mesh)
-
-    if generate_volume_meshes:
         p1 = output_dir + 'surface-meshes/' + name + '-25d.obj'
-
         if os.path.isfile(p1):
             m.generate_lumen_tetmsh(p1, path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-25d.msh',
                                     removeOBJ=False)
@@ -130,8 +170,6 @@ def segment_2d_to_meshes(img_dist, img_skel,
             m.generate_lumen_tetmsh(p1, path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-25d.msh',
                                     removeOBJ=True)
         m.create_ExodusII_file(output_dir + 'volume-meshes/' + name + '-25d.msh', path_to_e='', removeMSH=False)
-
-    return mesh
 
 
 def generate_2d_network(img_skel, img_dist,
@@ -156,30 +194,28 @@ def generate_2d_network(img_skel, img_dist,
     return G
 
 
-def std_3d_segment(img_2d_stack, img_mask, scale,
+def std_3d_segment(img_2d_stack, img_mask, scale, slice_contrast='original', pre_thresh='sauvola',
                    maxr=15, minr=1, h_pct_r=0.75,
                    thresh_pct=0.15, ellipsoid_method='octants', thresh_num_oct=5, thresh_num_oct_op=3, max_iters=1,
                    n_theta=4, n_phi=4, ray_trace_mode='uniform', theta='xy', max_escape=1, path_l=1,
                    bth_k=3, wth_k=3, window_size=(7, 15, 15),
                    enforce_circular=True, h_pct_ellip=1,
                    fill_lumen_meshing=True, max_meshing_iters=3,
-                   squeeze_skel_blobs=True, remove_skel_surf=True, surf_tol=5,
+                   squeeze_skel_blobs=True, remove_skel_surf=True, surf_tol=5, close_skels=False, connected_3D=True,
                    plot_slices=False, plot_lumen_fill=True, plot_3d=True,
                    output_dir='', name='',
-                   save_surface_meshes=True, generate_volume_meshes=False):
-    if save_surface_meshes:
-        if not os.path.isdir(output_dir + 'surface-meshes/'):
-            os.mkdir(output_dir + 'surface-meshes/')
-
-    if generate_volume_meshes:
-        if not os.path.isdir(output_dir + 'volume-meshes/'):
-            os.mkdir(output_dir + 'volume-meshes/')
-
+                   save_3d_masks=True,
+                   generate_meshes=True, generate_skels=True,
+                   plot_skels=True, save_skel=True,
+                   save_surface_3D=True, generate_volume_3D=False,
+                   save_surface_round=True, generate_volume_round=False):
     print('\n============')
     print('3d analysis:')
     print('============')
-    img_binary_array = st3.img_2d_stack_to_binary_array(img_2d_stack, bth_k=bth_k, wth_k=wth_k,
-                                                        window_size=window_size, plot_all=plot_slices)
+    slice_contrast = contrasts[slice_contrast]
+    img_binary_array = st3.img_2d_stack_to_binary_array(img_2d_stack, bth_k=bth_k, wth_k=wth_k, plot_all=plot_slices,
+                                                        window_size=window_size, slice_contrast=slice_contrast,
+                                                        pre_thresh=pre_thresh)
 
     img_3d = img_binary_array.astype('int')
     img_3d, img_mask = st3.pre_process_fill_lumen(img_3d, img_mask)
@@ -195,6 +231,9 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
                                               n_theta=n_theta, n_phi=n_phi, mode=ray_trace_mode, theta=theta,
                                               max_escape=max_escape, path_l=path_l)
     img_3d_r = img_3d_e + lumen_mask_r
+    if connected_3D:
+        img_3d_r = st2.get_largest_connected_region(img_3d_r, plot=False, verbose=False)
+
     if plot_lumen_fill:
         st3.show_lumen_fill(img_3d, lumen_mask_e, l2_fill=lumen_mask_r)
 
@@ -214,77 +253,133 @@ def std_3d_segment(img_2d_stack, img_mask, scale,
 
         img_3d_r = np.asarray(new_img)
 
-    img_3d_r = np.pad(img_3d_r, 1)
+    img_3D = np.pad(img_3d_r, 1)
+    img_round = None
+
     if fill_lumen_meshing:
-        mesh, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=False, offscreen=True,
+        mesh, vert_list = m.generate_surface(img_3D, iso=0, grad='ascent', plot=False, offscreen=True,
                                              fill_internals=True)
-        img_3d_r = st3.iterative_lumen_mesh_filling(img_3d_r, vert_list, max_meshing_iters)
+        img_3D = st3.iterative_lumen_mesh_filling(img_3D, vert_list, max_meshing_iters)
 
-    mesh1, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False,
-                                          fill_internals=True, title="'Honest' scaling (no extrapolation)")
-
-    if save_surface_meshes:
-        filepath = output_dir + 'surface-meshes/' + name + '-3d'
-        pymesh.save_mesh(filepath + '.obj', mesh1)
-
-    skel_3d1 = st3.skeleton_3d(img_3d_r, squeeze_blobs=squeeze_skel_blobs, remove_surfaces=remove_skel_surf,
-                               surface_tol=surf_tol)
-    skel_3d1 = closing(skel_3d1)
-    if plot_3d:
-        m.generate_surface(skel_3d1, connected=False, clean=True, title="'Honest' scaling (no extrapolation)")
-
-    mesh2 = None
-    skel_3d2 = None
-
-    if enforce_circular:
-        img_3d_r = st3.enforce_circular(img_3d_r, h_pct=h_pct_ellip)
-        img_3d_r = np.pad(img_3d_r, 1)
+    if enforce_circular or save_surface_round:
+        img_round = st3.enforce_circular(img_3D, h_pct=h_pct_ellip)
+        img_round = np.pad(img_round, 1)
 
         if fill_lumen_meshing:
-            mesh, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=False, offscreen=True,
+            mesh, vert_list = m.generate_surface(img_round, iso=0, grad='ascent', plot=False, offscreen=True,
                                                  fill_internals=True)
-            img_3d_r = st3.iterative_lumen_mesh_filling(img_3d_r, vert_list, 3)
+            img_round = st3.iterative_lumen_mesh_filling(img_round, vert_list, max_meshing_iters)
 
-        mesh2, vert_list = m.generate_surface(img_3d_r, iso=0, grad='ascent', plot=plot_3d, offscreen=False,
-                                              fill_internals=True, title="Ellipsoid enforced scaling")
+    if generate_meshes:
+        std_3d_mesh(img_3D=img_3D, img_round=img_round, h_pct_ellip=h_pct_ellip,
+                    save_surface_3D=save_surface_3D, save_surface_round=save_surface_round,
+                    generate_volume_3D=generate_volume_3D, generate_volume_round=generate_volume_round,
+                    output_dir=output_dir, name=name, plot_3d=plot_3d)
 
-        if save_surface_meshes:
-            filepath = output_dir + 'surface-meshes/' + name + 'enforce-ellip-' + str(h_pct_ellip)
-            pymesh.save_mesh(filepath + '.obj', mesh2)
+    skel_3D, skel_round = None, None
+    if generate_skels:
+        skel_3D, skel_round = std_3d_skel(img_3D=img_3D, img_round=img_round, h_pct_ellip=h_pct_ellip,
+                                          squeeze_blobs=squeeze_skel_blobs, remove_surfaces=remove_skel_surf,
+                                          skel_close=close_skels,
+                                          output_dir=output_dir, name=name, plot_3d=plot_skels, surf_tol=surf_tol,
+                                          save_skel=save_skel)
 
-        skel_3d2 = st3.skeleton_3d(img_3d_r, squeeze_blobs=squeeze_skel_blobs, remove_surfaces=remove_skel_surf,
-                                   surface_tol=surf_tol)
-        skel_3d2 = closing(skel_3d2)
+    if save_3d_masks:
+        if not os.path.isdir(output_dir + 'masks3D/'):
+            os.mkdir(output_dir + 'masks3D/')
+        tif.imsave(output_dir + 'masks3D/' + name + '-3D.tif', np.asarray(img_3D, 'uint8'), bigtiff=True)
+        if img_round is not None:
+            tif.imsave(output_dir + 'masks3D/' + name + '-enforce-ellip-' + str(h_pct_ellip) + '.tif',
+                       np.asarray(img_round, 'uint8'), bigtiff=True)
 
+    return img_3D, img_round, skel_3D, skel_round
+
+
+def std_3d_mesh(img_3D=None, img_round=None, connected=True, h_pct_ellip=0,
+                save_surface_3D=True, save_surface_round=True,
+                generate_volume_3D=False, generate_volume_round=False,
+                output_dir='', name='', plot_3d=True):
+    if img_3D is not None:
+        mesh_3D, vert_list = m.generate_surface(img_3D, iso=0, grad='ascent', plot=plot_3d, offscreen=False,
+                                                connected=connected,
+                                                fill_internals=False, clean=True,
+                                                title="'Honest' scaling (no extrapolation)")
+
+        if save_surface_3D or generate_volume_3D:
+            if not os.path.isdir(output_dir + 'surface-meshes/'):
+                os.mkdir(output_dir + 'surface-meshes/')
+            path = output_dir + 'surface-meshes/' + name + '-3d'
+            pymesh.save_mesh(path + '.obj', mesh_3D)
+
+        if generate_volume_3D:
+            if not os.path.isdir(output_dir + 'volume-meshes/'):
+                os.mkdir(output_dir + 'volume-meshes/')
+            if save_surface_3D:
+                m.generate_lumen_tetmsh(output_dir + 'surface-meshes/' + name + '-3d.obj',
+                                        path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d.msh',
+                                        removeOBJ=False)
+            else:
+                m.generate_lumen_tetmsh(output_dir + 'surface-meshes/' + name + '-3d.obj',
+                                        path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d.msh',
+                                        removeOBJ=True)
+            m.create_ExodusII_file(output_dir + 'volume-meshes/' + name + '-3d.msh')
+
+    if img_round is not None:
+        mesh_round, vert_list = m.generate_surface(img_round, iso=0, grad='ascent', plot=plot_3d, offscreen=False,
+                                                   connected=connected,
+                                                   fill_internals=False, clean=True, title="Ellipsoid enforced scaling")
+
+        if save_surface_round or generate_volume_round:
+            if not os.path.isdir(output_dir + 'surface-meshes/'):
+                os.mkdir(output_dir + 'surface-meshes/')
+            path = output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str(h_pct_ellip)
+            pymesh.save_mesh(path + '.obj', mesh_round)
+
+        if generate_volume_round:
+            if not os.path.isdir(output_dir + 'volume-meshes/'):
+                os.mkdir(output_dir + 'volume-meshes/')
+            if save_surface_round:
+                m.generate_lumen_tetmsh(
+                    output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str(h_pct_ellip) + '.obj',
+                    path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(h_pct_ellip) + '.msh',
+                    removeOBJ=False)
+            else:
+                m.generate_lumen_tetmsh(
+                    output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str(h_pct_ellip) + '.obj',
+                    path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(h_pct_ellip) + '.msh',
+                    removeOBJ=True)
+            m.create_ExodusII_file(output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(h_pct_ellip) + '.msh')
+
+
+def std_3d_skel(img_3D=None, img_round=None, h_pct_ellip=0,
+                squeeze_blobs=False, remove_surfaces=False, surf_tol=5, skel_close=False,
+                output_dir='', name='', plot_3d=True, save_skel=False):
+    skel_3D, skel_round = None, None
+    if img_3D is not None:
+        skel_3D = st3.skeleton_3d(img_3D, squeeze_blobs=squeeze_blobs, remove_surfaces=remove_surfaces,
+                                  surface_tol=surf_tol)
+        if skel_close:
+            skel_3D = closing(skel_3D)
         if plot_3d:
-            m.generate_surface(skel_3d2, connected=False, clean=True, title="Ellipsoid enforced scaling")
+            m.generate_surface(skel_3D, connected=False, clean=True, title="'Honest' scaling (no extrapolation)")
 
-    if generate_volume_meshes:
-        p1 = output_dir + 'surface-meshes/' + name + '-3d.obj'
-        p2 = output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str(h_pct_ellip) + '.obj'
+        if save_skel:
+            if not os.path.isdir(output_dir + 'skels3d/'):
+                os.mkdir(output_dir + 'skels3d/')
+            tif.imsave(output_dir + 'skels3d/' + name + '-3D.tif', np.asarray(skel_3D, 'uint8'), bigtiff=True)
 
-        if os.path.isfile(p1):
-            m.generate_lumen_tetmsh(p1, path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d.msh',
-                                    removeOBJ=False)
-        else:
-            pymesh.save_mesh(p1, mesh1)
-            m.generate_lumen_tetmsh(p1, path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d.msh',
-                                    removeOBJ=True)
+    if img_round is not None:
+        skel_round = st3.skeleton_3d(img_round, squeeze_blobs=squeeze_blobs, remove_surfaces=remove_surfaces,
+                                     surface_tol=surf_tol)
+        if skel_close:
+            skel_round = closing(skel_round)
+        if plot_3d:
+            m.generate_surface(skel_round, connected=False, clean=True, title="Ellipsoid enforced scaling")
 
-        m.create_ExodusII_file(output_dir + 'volume-meshes/' + name + '-3d.msh', path_to_e='', removeMSH=False)
+        if save_skel:
+            if not os.path.isdir(output_dir + 'skels3d/'):
+                os.mkdir(output_dir + 'skels3d/')
+            tif.imsave(output_dir + 'skels3d/' + name + '-enforce-ellip-' + str(h_pct_ellip) + '.tif',
+                       np.asarray(skel_round, 'uint8'), bigtiff=True)
 
-        if enforce_circular and os.path.isfile(p2):
-            m.generate_lumen_tetmsh(p2, path_to_volume_msh=output_dir + 'volume-meshes/' + name +
-                                                           '-enforce-ellip-' + str(h_pct_ellip) + '.msh',
-                                    removeOBJ=False)
-        elif enforce_circular:
-            pymesh.save_mesh(p2, mesh2)
-            m.generate_lumen_tetmsh(p2, path_to_volume_msh=output_dir + 'volume-meshes/' + name +
-                                                           '-enforce-ellip-' + str(h_pct_ellip) + '.msh',
-                                    removeOBJ=True)
-
-        if enforce_circular:
-            m.create_ExodusII_file(output_dir + 'volume-meshes/' + name +
-                                   '-enforce-ellip-' + str(h_pct_ellip) + '.msh', path_to_e='', removeMSH=False)
-
-    return img_3d_r, mesh1, mesh2, skel_3d1, skel_3d2
+    return skel_3D, skel_round

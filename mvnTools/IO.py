@@ -1,144 +1,252 @@
 import ntpath
 
-from mvnTools.Pipelines import std_2d_segment, std_3d_segment, generate_2d_network, segment_2d_to_meshes
+from mvnTools.Pipelines import std_2d_segment, std_3d_segment
 
 
 class IO:
-    input_dic = {'TIF_FILE': None,
-                 'SCALE_X': None,
-                 'SCALE_Y': None,
-                 'SCALE_Z': None,
+    name = None
+    input_dic = {
+        # Input image and scale values (um / pixel)
+        'TIF_FILE': None,
+        'SCALE_X': None,
+        'SCALE_Y': None,
+        'SCALE_Z': None,
 
-                 'OUTPUT_DIR': None,
-                 'SAVE_MESHES': True,
-                 'GENERATE_VOLUME_MESHES': False,
+        # Piplelines to Run
+        'SEGMENT_2D': False,
+        'MESH_25D': False,
+        'SEGMENT_3D': False,
+        'MESH_3D': False,
+        'SKEL_3D': False,
+        'NETWORK_2D': False,
+        'NETOWRK_3D': False,
 
-                 'FILES_2D': True,
-                 'MESH_25D': True,
-                 'MESH_3D': True,
-                 'SKEL_3D': True,
-                 'NETWORK': True,
-                 'NETWORK_ANALYSIS': True,
+        # Save Parameters
+        'OUTPUT_DIR': None,
 
-                 'PLOTS_2D': True,
-                 'REVIEW_PLOT_2D': True,
-                 'PLOT_SLICES': False,
-                 'PLOT_LUMEN_FILL': True,
-                 'PLOT_3D': True,
+        'SAVE_2D_MASK': True,
+        'SAVE_2D_SKEL': True,
+        'SAVE_2D_DIST': True,
+        'SAVE_2D_DISPLAY': True,
+        'SAVE_2D_REVIEW': True,
 
-                 'CONTRAST_METHOD': 'rescale',
-                 'THRESH_METHOD': 'entropy',
-                 'RWALK_THRESH_LOW': 0,
-                 'RWALK_THRESH_HIGH': 0,
-                 'BTH_K_2D': 3,
-                 'WTH_K_2D': 3,
-                 'DILA_GAUSS': 0.333,
-                 'OPEN_FIRST': 0,
-                 'OPEN_K_2D': 0,
-                 'CLOSE_K_2D': 5,
-                 'CONNECTED_2D': 0,
-                 'SMOOTH': 1,
+        'SAVE_25D_MESH': True,
+        'SAVE_25D_MASK': False,
+        'GENERATE_25D_VOLUME': False,
 
-                 'NEAR_NODE_TOL': 5,
-                 'LENGTH_TOL': 1,
+        'SAVE_3D_MASK': False,
+        'SAVE_3D_SKEL': False,
 
-                 'BTH_K_3D': 3,
-                 'WTH_K_3D': 3,
-                 'OPEN_K_3D': 0,
-                 'CLOSE_K_3D': 5,
+        'SAVE_3D_MESH': True,
+        'GENERATE_3D_VOLUME': False,
+        'SAVE_3D_MESH_ROUND': True,
+        'GENERATE_3D_ROUND_VOLUME': False,
 
-                 'ELLIPSOID_METHOD': 'octants',
-                 'MAXR': 15,
-                 'MINR': 1,
-                 'H_PCT_R': 0.75,
-                 'THRESH_PCT': 0.15,
-                 'THRESH_NUM_OCT': 5,
-                 'THRESH_NUM_OCT_OP': 3,
-                 'MAX_ITERS': 1,
+        'SAVE_2D_NETWORK': True,
+        'SAVE_3D_NETWORK': True,
 
-                 'RAY_TRACE_MODE': 'uniform',
-                 'THETA': 'sweep',
-                 'N_THETA': 6,
-                 'N_PHI': 6,
-                 'MAX_ESCAPE': 1,
-                 'PATH_L': 1,
+        # Display Parameters
+        'PLOT_ALL_2D': False,
+        'REVIEW_PLOT_2D': False,
 
-                 'FILL_LUMEN_MESHING': True,
-                 'ENFORCE_ELLIPSOID_LUMEN': True,
-                 'H_PCT_ELLIPSOID': 1,
+        'PLOT_25D_MESH': True,
 
-                 'WINDOW_SIZE_X': 15,
-                 'WINDOW_SIZE_Y': 15,
-                 'WINDOW_SIZE_Z': 7}
+        'PLOT_3D_THRESH_SLICES': False,
+        'PLOT_LUMEN_FILL': False,
 
-    input_dic_setter = {'TIF_FILE=': str,
-                        'SCALE_X=': float,
-                        'SCALE_Y=': float,
-                        'SCALE_Z=': float,
+        'PLOT_3D_MESHES': True,
+        'PLOT_3D_SKELS': True,
 
-                        'OUTPUT_DIR=': str,
-                        'SAVE_MESHES=': bool,
-                        'GENERATE_VOLUME_MESHES=': bool,
+        # 2D Analysis
+        'CONTRAST_METHOD': 'rescale',
+        'THRESH_METHOD': 'entropy',
+        'RWALK_THRESH_LOW': 0.75,
+        'RWALK_THRESH_HIGH': 0.8,
+        'BTH_K_2D': 3,
+        'WTH_K_2D': 3,
+        'DILA_GAUSS': 0.333,
+        'OPEN_FIRST': False,
+        'OPEN_K_2D': 0,
+        'CLOSE_K_2D': 5,
+        'CONNECTED_2D': False,
+        'SMOOTH': 1.0,
 
-                        'FILES_2D=': bool,
-                        'MESH_25D=': bool,
-                        'MESH_3D=': bool,
-                        'SKEL_3D=': bool,
-                        'NETWORK=': bool,
-                        'NETWORK_ANALYSIS=': bool,
+        # 25D Analysis
+        'CONNECTED_25D_MESH': True,
+        'CONNECTED_25D_VOLUME': False,
 
-                        'PLOTS_2D=': bool,
-                        'REVIEW_PLOT_2D=': bool,
-                        'PLOT_SLICES=': bool,
-                        'PLOT_LUMEN_FILL=': bool,
-                        'PLOT_3D=': bool,
+        # 3D Analysis
 
-                        'CONTRAST_METHOD=': str,
-                        'THRESH_METHOD=': str,
-                        'RWALK_THRESH_LOW=': float,
-                        'RWALK_THRESH_HIGH=': float,
-                        'BTH_K_2D=': int,
-                        'WTH_K_2D=': int,
-                        'DILA_GAUSS=': float,
-                        'OPEN_FIRST=': bool,
-                        'OPEN_K_2D=': int,
-                        'CLOSE_K_2D=': int,
-                        'CONNECTED_2D=': bool,
-                        'SMOOTH=': float,
+        # Output parameters
+        'CONNECTED_3D_MASK': False,
+        'CONNECTED_3D_MESH': True,
+        'CONNECTED_3D_SKEL': False,
 
-                        'NEAR_NODE_TOL=': int,
-                        'LENGTH_TOL=': int,
+        'SLICE_CONTRAST': 'original',
+        'PRE_THRESH': 'sauvola',
+        'WINDOW_SIZE_X': 15,
+        'WINDOW_SIZE_Y': 15,
+        'WINDOW_SIZE_Z': 7,
 
-                        'BTH_K_3D=': int,
-                        'WTH_K_3D=': int,
-                        'OPEN_K_3D=': int,
-                        'CLOSE_K_3D=': int,
+        'BTH_K_3D': 3,
+        'WTH_K_3D': 3,
+        'CLOSE_K_3D': 5,
 
-                        'ELLIPSOID_METHOD=': str,
-                        'MAXR=': int,
-                        'MINR=': int,
-                        'H_PCT_R=': float,
-                        'THRESH_PCT=': float,
-                        'THRESH_NUM_OCT=': int,
-                        'THRESH_NUM_OCT_OP=': int,
-                        'MAX_ITERS=': int,
+        'ELLIPSOID_METHOD': 'octants',
+        'MAXR': 15,
+        'MINR': 1,
+        'H_PCT_R': 0.5,
+        'THRESH_PCT': 0.15,
+        'THRESH_NUM_OCT': 5,
+        'THRESH_NUM_OCT_OP': 3,
+        'MAX_ITERS': 1,
 
-                        'RAY_TRACE_MODE=': str,
-                        'THETA=': str,
-                        'N_THETA=': int,
-                        'N_PHI=': int,
-                        'MAX_ESCAPE=': int,
-                        'PATH_L=': int,
+        'RAY_TRACE_MODE': 'uniform',
+        'THETA': 'exclude_z_pole',
+        'N_THETA': 6,
+        'N_PHI': 6,
+        'MAX_ESCAPE': 2,
+        'PATH_L': 1,
 
-                        'FILL_LUMEN_MESHING=': bool,
-                        'ENFORCE_ELLIPSOID_LUMEN=': bool,
-                        'H_PCT_ELLIPSOID=': float,
+        'FILL_LUMEN_MESHING': True,
+        'FILL_LUMEN_MESHING_MAX_ITS': 3,
 
-                        'WINDOW_SIZE_X=': int,
-                        'WINDOW_SIZE_Y=': int,
-                        'WINDOW_SIZE_Z=': int}
+        'ENFORCE_ELLIPSOID_LUMEN': True,
+        'H_PCT_ELLIPSOID': 1.00,
 
-    def __init__(self, input_file, echo_inputs=False, silent_mode=False):
+        # Skeletonizaiton Parameters
+        'SQUEEZE_SKEL_BLOBS': True,
+        'REMOVE_SKEL_SURF': True,
+        'SKEL_SURF_TOL': 5,
+        'SKEL_CLOSING': True,
+
+        # Graph Analysis
+        'NEAR_NODE_TOL': 5,
+        'LENGTH_TOL': 1,
+    }
+
+    input_dic_setter = {
+        # Input image and scale values (um / pixel)
+        'TIF_FILE=': str,
+        'SCALE_X=': float,
+        'SCALE_Y=': float,
+        'SCALE_Z=': float,
+
+        # Piplelines to Run
+        'SEGMENT_2D=': bool,
+        'MESH_25D=': bool,
+        'SEGMENT_3D=': bool,
+        'MESH_3D=': bool,
+        'SKEL_3D=': bool,
+        'NETWORK_2D=': bool,
+        'NETOWRK_3D=': bool,
+
+        # Save Parameters
+        'OUTPUT_DIR=': str,
+
+        'SAVE_2D_MASK=': bool,
+        'SAVE_2D_SKEL=': bool,
+        'SAVE_2D_DIST=': bool,
+        'SAVE_2D_DISPLAY=': bool,
+        'SAVE_2D_REVIEW=': bool,
+
+        'SAVE_25D_MESH=': bool,
+        'SAVE_25D_MASK=': bool,
+        'GENERATE_25D_VOLUME=': bool,
+
+        'SAVE_3D_MASK=': bool,
+        'SAVE_3D_SKEL=': bool,
+
+        'SAVE_3D_MESH=': bool,
+        'GENERATE_3D_VOLUME=': bool,
+        'SAVE_3D_MESH_ROUND=': bool,
+        'GENERATE_3D_ROUND_VOLUME=': bool,
+
+        'SAVE_2D_NETWORK=': bool,
+        'SAVE_3D_NETWORK=': bool,
+
+        # Display Parameters
+        'PLOT_ALL_2D=': bool,
+        'REVIEW_PLOT_2D=': bool,
+
+        'PLOT_25D_MESH=': bool,
+
+        'PLOT_3D_THRESH_SLICES=': bool,
+        'PLOT_LUMEN_FILL=': bool,
+
+        'PLOT_3D_MESHES=': bool,
+        'PLOT_3D_SKELS=': bool,
+
+        # 2D Analysis
+        'CONTRAST_METHOD=': str,
+        'THRESH_METHOD=': str,
+        'RWALK_THRESH_LOW=': float,
+        'RWALK_THRESH_HIGH=': float,
+        'BTH_K_2D=': int,
+        'WTH_K_2D=': int,
+        'DILA_GAUSS=': float,
+        'OPEN_FIRST=': bool,
+        'OPEN_K_2D=': int,
+        'CLOSE_K_2D=': int,
+        'CONNECTED_2D=': bool,
+        'SMOOTH=': float,
+
+        # 25D Analysis
+        'CONNECTED_25D_MESH=': bool,
+        'CONNECTED_25D_VOLUME=': bool,
+
+        # 3D Analysis
+
+        # Output parameters
+        'CONNECTED_3D_MASK=': bool,
+        'CONNECTED_3D_MESH=': bool,
+        'CONNECTED_3D_SKEL=': bool,
+
+        # Thresholding parameters
+        'SLICE_CONTRAST=': str,
+        'PRE_THRESH=': str,
+        'WINDOW_SIZE_X=': int,
+        'WINDOW_SIZE_Y=': int,
+        'WINDOW_SIZE_Z=': int,
+
+        'BTH_K_3D=': int,
+        'WTH_K_3D=': int,
+        'CLOSE_K_3D=': int,
+
+        'ELLIPSOID_METHOD=': str,
+        'MAXR=': int,
+        'MINR=': int,
+        'H_PCT_R=': float,
+        'THRESH_PCT=': float,
+        'THRESH_NUM_OCT=': int,
+        'THRESH_NUM_OCT_OP=': int,
+        'MAX_ITERS=': int,
+
+        'RAY_TRACE_MODE=': str,
+        'THETA=': str,
+        'N_THETA=': int,
+        'N_PHI=': int,
+        'MAX_ESCAPE=': int,
+        'PATH_L=': int,
+
+        'FILL_LUMEN_MESHING=': bool,
+        'FILL_LUMEN_MESHING_MAX_ITS=': int,
+
+        'ENFORCE_ELLIPSOID_LUMEN=': bool,
+        'H_PCT_ELLIPSOID=': float,
+
+        # Skeletonizaiton Parameters
+        'SQUEEZE_SKEL_BLOBS=': bool,
+        'REMOVE_SKEL_SURF=': bool,
+        'SKEL_SURF_TOL=': int,
+        'SKEL_CLOSING=': bool,
+
+        # Graph Analysis
+        'NEAR_NODE_TOL=': int,
+        'LENGTH_TOL=': int
+    }
+
+    def __init__(self, input_file, echo_inputs=False, silent_mode=False, all_plots_mode=False):
         with open(input_file, 'r') as f:
             inputs = f.read()
 
@@ -159,23 +267,62 @@ class IO:
                 self.input_dic[param[:-1]] = val
 
         f.close()
-
+        self.name = ntpath.basename(self.input_dic['TIF_FILE']).split('.')[0]
         if silent_mode:
-            self.input_dic['PLOTS_2D'] = False
+            self.input_dic['PLOT_ALL_2D'] = False
             self.input_dic['REVIEW_PLOT_2D'] = False
-            self.input_dic['PLOT_SLICES'] = False
+            self.input_dic['PLOT_3D_THRESH_SLICES'] = False
             self.input_dic['PLOT_LUMEN_FILL'] = False
-            self.input_dic['PLOT_3D'] = False
+            self.input_dic['PLOT_3D_MESHES'] = False
+            self.input_dic['PLOT_3D_SKELS'] = False
+
+        if all_plots_mode:
+            self.input_dic['PLOT_ALL_2D'] = True
+            self.input_dic['REVIEW_PLOT_2D'] = True
+            self.input_dic['PLOT_3D_THRESH_SLICES'] = True
+            self.input_dic['PLOT_LUMEN_FILL'] = True
+            self.input_dic['PLOT_3D_MESHES'] = True
+            self.input_dic['PLOT_3D_SKELS'] = True
 
         if echo_inputs:
             for ins in self.input_dic:
                 print(ins + '=' + str(self.input_dic[ins]))
 
-        if self.input_dic['FILES_2D']:
+        if self.input_dic['SEGMENT_2D'] or self.input_dic['MESH_25D']:
+            std_2d_segment(self.input_dic['TIF_FILE'],
+                           scale_xy=(self.input_dic['SCALE_X'], self.input_dic['SCALE_Y']),
+                           contrast_method=self.input_dic['CONTRAST_METHOD'],
+                           thresh_method=self.input_dic['THRESH_METHOD'],
+                           rwalk_thresh=(self.input_dic['RWALK_THRESH_LOW'], self.input_dic['RWALK_THRESH_HIGH']),
+                           bth_k=self.input_dic['BTH_K_2D'],
+                           wth_k=self.input_dic['WTH_K_2D'],
+                           dila_gauss=self.input_dic['DILA_GAUSS'],
+                           open_first=self.input_dic['OPEN_FIRST'],
+                           open_k=self.input_dic['OPEN_K_2D'],
+                           close_k=self.input_dic['CLOSE_K_2D'],
+                           connected2D=self.input_dic['CONNECTED_2D'],
+                           smooth=self.input_dic['SMOOTH'],
+                           all_plots=self.input_dic['PLOT_ALL_2D'] and self.input_dic['SEGMENT_2D'],
+                           review_plot=self.input_dic['REVIEW_PLOT_2D'] and self.input_dic['SEGMENT_2D'],
+                           output_dir=self.input_dic['OUTPUT_DIR'],
+                           name=self.name,
+                           save_mask=self.input_dic['SAVE_2D_MASK'] and self.input_dic['SEGMENT_2D'],
+                           save_skel=self.input_dic['SAVE_2D_SKEL'] and self.input_dic['SEGMENT_2D'],
+                           save_dist=self.input_dic['SAVE_2D_DIST'] and self.input_dic['SEGMENT_2D'],
+                           save_disp=self.input_dic['SAVE_2D_DISPLAY'] and self.input_dic['SEGMENT_2D'],
+                           save_review=self.input_dic['SAVE_2D_REVIEW'] and self.input_dic['SEGMENT_2D'],
+                           generate_mesh_25=self.input_dic['MESH_25D'],
+                           connected_mesh=self.input_dic['CONNECTED_25D_MESH'],
+                           connected_vol=self.input_dic['CONNECTED_25D_VOLUME'],
+                           plot_25d=self.input_dic['PLOT_25D_MESH'],
+                           save_volume_mask=self.input_dic['SAVE_25D_MASK'],
+                           save_surface_meshes=self.input_dic['SAVE_25D_MESH'],
+                           generate_volume_meshes=self.input_dic['GENERATE_25D_VOLUME'])
+
+        if self.input_dic['SEGMENT_3D'] or self.input_dic['MESH_3D'] or self.input_dic['SKEL_3D']:
             img_enhanced, img_mask, img_skel, img_dist, img_original = \
                 std_2d_segment(self.input_dic['TIF_FILE'],
-                               (self.input_dic['SCALE_X'],
-                                self.input_dic['SCALE_Y']),
+                               scale_xy=(1, 1),
                                contrast_method=self.input_dic['CONTRAST_METHOD'],
                                thresh_method=self.input_dic['THRESH_METHOD'],
                                rwalk_thresh=(self.input_dic['RWALK_THRESH_LOW'],
@@ -186,62 +333,33 @@ class IO:
                                open_first=self.input_dic['OPEN_FIRST'],
                                open_k=self.input_dic['OPEN_K_2D'],
                                close_k=self.input_dic['CLOSE_K_2D'],
-                               connected=self.input_dic['CONNECTED_2D'],
-                               smooth=self.input_dic['SMOOTH'],
-                               all_plots=self.input_dic['PLOTS_2D'],
-                               review_plot=self.input_dic['REVIEW_PLOT_2D'])
-
-        if self.input_dic['NETWORK']:
-            img_enhanced, img_mask, img_skel, img_dist, img_original = \
-                std_2d_segment(self.input_dic['TIF_FILE'],
-                               (self.input_dic['SCALE_X'],
-                                self.input_dic['SCALE_Y']),
-                               contrast_method=self.input_dic['CONTRAST_METHOD'],
-                               thresh_method=self.input_dic['THRESH_METHOD'],
-                               rwalk_thresh=(self.input_dic['RWALK_THRESH_LOW'],
-                                             self.input_dic['RWALK_THRESH_HIGH']),
-                               bth_k=self.input_dic['BTH_K_2D'],
-                               wth_k=self.input_dic['WTH_K_2D'],
-                               dila_gauss=self.input_dic['DILA_GAUSS'],
-                               open_first=self.input_dic['OPEN_FIRST'],
-                               open_k=self.input_dic['OPEN_K_2D'],
-                               close_k=self.input_dic['CLOSE_K_2D'],
-                               connected=self.input_dic['CONNECTED_2D'],
-                               smooth=self.input_dic['SMOOTH'],
-                               all_plots=self.input_dic['PLOTS_2D'],
-                               review_plot=self.input_dic['REVIEW_PLOT_2D'])
-
-            G = generate_2d_network(img_skel, img_dist,
-                                    near_node_tol=self.input_dic['NEAR_NODE_TOL'],
-                                    length_tol=self.input_dic['LENGTH_TOL'],
-                                    img_enhanced=img_enhanced,
-                                    plot=self.input_dic['PLOT_3D'])
-
-        if self.input_dic['MESH_25D']:
-            mesh = segment_2d_to_meshes(img_dist, img_skel,
-                                        all_plots=self.input_dic['PLOT_3D'])
-
-        if self.input_dic['MESH_3D']:
-            img_enhanced, img_mask, img_skel, img_dist, img_original = \
-                std_2d_segment(self.input_dic['TIF_FILE'],
-                               (1, 1),
-                               contrast_method=self.input_dic['CONTRAST_METHOD'],
-                               thresh_method=self.input_dic['THRESH_METHOD'],
-                               rwalk_thresh=(self.input_dic['RWALK_THRESH_LOW'],
-                                             self.input_dic['RWALK_THRESH_HIGH']),
-                               bth_k=self.input_dic['BTH_K_2D'],
-                               wth_k=self.input_dic['WTH_K_2D'],
-                               dila_gauss=self.input_dic['DILA_GAUSS'],
-                               open_first=self.input_dic['OPEN_FIRST'],
-                               open_k=self.input_dic['OPEN_K_2D'],
-                               close_k=self.input_dic['CLOSE_K_2D'],
-                               connected=True,
+                               connected2D=self.input_dic['CONNECTED_3D_MASK'],
                                smooth=self.input_dic['SMOOTH'],
                                all_plots=False,
-                               review_plot=self.input_dic['REVIEW_PLOT_2D'])
+                               review_plot=False,
+                               output_dir=self.input_dic['OUTPUT_DIR'],
+                               name=self.name,
+                               save_mask=False,
+                               save_skel=False,
+                               save_dist=False,
+                               save_disp=False,
+                               save_review=False,
+                               generate_mesh_25=False,
+                               connected_mesh=self.input_dic['CONNECTED_25D_MESH'],
+                               connected_vol=self.input_dic['CONNECTED_25D_VOLUME'],
+                               plot_25d=False,
+                               save_volume_mask=False,
+                               save_surface_meshes=False,
+                               generate_volume_meshes=False)
 
-            std_3d_segment(img_original.get_pages(), img_mask,
-                           (self.input_dic['SCALE_X'], self.input_dic['SCALE_Y'], self.input_dic['SCALE_Z']),
+            img_2d_stack = img_original.get_pages()
+            scale_factor = img_original.downsample_factor
+            std_3d_segment(img_2d_stack, img_mask,
+                           scale=(self.input_dic['SCALE_X'] * scale_factor,
+                                  self.input_dic['SCALE_Y'] * scale_factor,
+                                  self.input_dic['SCALE_Z'] * scale_factor),
+                           slice_contrast=self.input_dic['SLICE_CONTRAST'],
+                           pre_thresh=self.input_dic['PRE_THRESH'],
                            maxr=self.input_dic['MAXR'],
                            minr=self.input_dic['MINR'],
                            h_pct_r=self.input_dic['H_PCT_R'],
@@ -258,15 +376,30 @@ class IO:
                            path_l=self.input_dic['PATH_L'],
                            bth_k=self.input_dic['BTH_K_3D'],
                            wth_k=self.input_dic['WTH_K_3D'],
+                           window_size=(
+                               self.input_dic['WINDOW_SIZE_Z'], self.input_dic['WINDOW_SIZE_X'],
+                               self.input_dic['WINDOW_SIZE_Y']),
                            enforce_circular=self.input_dic['ENFORCE_ELLIPSOID_LUMEN'],
                            h_pct_ellip=self.input_dic['H_PCT_ELLIPSOID'],
-                           window_size=(self.input_dic['WINDOW_SIZE_Z'], self.input_dic['WINDOW_SIZE_X'],
-                                        self.input_dic['WINDOW_SIZE_Y']),
-                           plot_slices=self.input_dic['PLOT_SLICES'],
-                           plot_lumen_fill=self.input_dic['PLOT_LUMEN_FILL'],
-                           plot_3d=self.input_dic['PLOT_3D'],
+                           fill_lumen_meshing=self.input_dic['FILL_LUMEN_MESHING'],
+                           max_meshing_iters=self.input_dic['FILL_LUMEN_MESHING_MAX_ITS'],
+                           squeeze_skel_blobs=self.input_dic['SQUEEZE_SKEL_BLOBS'] and self.input_dic['SKEL_3D'],
+                           remove_skel_surf=self.input_dic['REMOVE_SKEL_SURF'] and self.input_dic['SKEL_3D'],
+                           surf_tol=self.input_dic['SKEL_SURF_TOL'],
+                           close_skels=self.input_dic['SKEL_CLOSING'] and self.input_dic['SKEL_3D'],
+                           plot_slices=self.input_dic['PLOT_3D_THRESH_SLICES'] and self.input_dic['SEGMENT_3D'],
+                           connected_3D=self.input_dic['CONNECTED_3D_MASK'],
+                           plot_lumen_fill=self.input_dic['PLOT_LUMEN_FILL'] and self.input_dic['SEGMENT_3D'],
+                           plot_3d=self.input_dic['PLOT_3D_MESHES'] and self.input_dic['MESH_3D'],
                            output_dir=self.input_dic['OUTPUT_DIR'],
-                           name=ntpath.basename(self.input_dic['TIF_FILE']).split('.')[0],
-                           save_surface_meshes=self.input_dic['SAVE_MESHES'],
-                           generate_volume_meshes=self.input_dic['GENERATE_VOLUME_MESHES']
+                           name=self.name,
+                           save_3d_masks=self.input_dic['SAVE_3D_MASK'] and self.input_dic['SEGMENT_3D'],
+                           generate_meshes=self.input_dic['MESH_3D'],
+                           generate_skels=self.input_dic['SKEL_3D'],
+                           plot_skels=self.input_dic['PLOT_3D_SKELS'] and self.input_dic['SKEL_3D'],
+                           save_skel=self.input_dic['SAVE_3D_SKEL'] and self.input_dic['SKEL_3D'],
+                           save_surface_3D=self.input_dic['SAVE_3D_MESH'] and self.input_dic['MESH_3D'],
+                           generate_volume_3D=self.input_dic['GENERATE_3D_VOLUME'] and self.input_dic['MESH_3D'],
+                           save_surface_round=self.input_dic['SAVE_3D_MESH_ROUND'] and self.input_dic['MESH_3D'],
+                           generate_volume_round=self.input_dic['GENERATE_3D_ROUND_VOLUME'] and self.input_dic['MESH_3D']
                            )

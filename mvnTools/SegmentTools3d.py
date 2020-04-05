@@ -1,13 +1,17 @@
+import os
 import warnings
-import mvnTools.SegmentTools2d as st2
-from mvnTools.MeshTools2d import smooth_dtransform_auto
-from mvnTools.Mesh import generate_surface
+
 import numpy as np
+from matplotlib import pyplot as plt
 from numba import jit, njit, prange
 from scipy import ndimage as ndi
 from skimage import morphology, transform, filters
+from skimage.external import tifffile as tif
 from skimage.filters import threshold_li, threshold_sauvola
-from matplotlib import pyplot as plt
+
+import mvnTools.SegmentTools2d as st2
+from mvnTools.Mesh import generate_surface
+from mvnTools.MeshTools2d import smooth_dtransform_auto
 
 
 def interp_slices(top, bottom, percent_bottom):
@@ -93,14 +97,9 @@ def get_ellipsoid_filter(r, h):
     return ball_mask[1::]
 
 
-# function get_new_pos()
-# input:   old_pos    -previous position of the photon
-#          k          -trajectory (theta, phi)
-#          path_l     -ray step size
-#
-# output:  new_pos   -new position(x,y,z)
+
 @njit(fastmath=True)
-def get_new_pos(old_pos, k,  path_l):
+def get_new_pos(old_pos, k, path_l):
     delz = path_l * np.cos(k[0])
     delx = path_l * np.sin(k[0]) * np.cos(k[1])
     dely = path_l * np.sin(k[0]) * np.sin(k[1])
@@ -125,9 +124,9 @@ def fill_lumen_ray_tracing(img_3d, img_mask,
 
     phis = np.linspace(0, 2 * np.pi, n_phi + 1)[1::]
     if theta == 'xy':
-        thetas = np.array([np.pi/2])
+        thetas = np.array([np.pi / 2])
     elif theta == 'exclude_z_pole':
-        thetas = np.linspace(-np.pi / 2, np.pi / 2, n_theta+1)
+        thetas = np.linspace(-np.pi / 2, np.pi / 2, n_theta + 1)
     else:
         thetas = np.linspace(-np.pi / 2, np.pi / 2, n_theta)
 
@@ -164,7 +163,7 @@ def fill_lumen_ray_tracing(img_3d, img_mask,
                             in_img = True
 
                             while in_img and not img_3d[z_im, x_im, y_im]:
-                                pos = get_new_pos(pos, k,  path_l)
+                                pos = get_new_pos(pos, k, path_l)
                                 z_im = int(pos[0] + 0.5)
                                 x_im = int(pos[1] + 0.5)
                                 y_im = int(pos[2] + 0.5)
@@ -173,7 +172,7 @@ def fill_lumen_ray_tracing(img_3d, img_mask,
                                          (0 <= x_im < dims[1]) and \
                                          (0 <= y_im < dims[2])
 
-                            if not in_img: # Loop broke because ray got to image edge
+                            if not in_img:  # Loop broke because ray got to image edge
                                 escaped = escaped + 1
                                 free_path = escaped >= max_escape
 
@@ -280,9 +279,9 @@ def show_lumen_fill(img_25d, l_fill, l2_fill=None, cmap1='Blues', cmap2='Reds'):
 
         ax[2].set_title('Original + Lumen Mask')
         ax[2].imshow(img_25d[p], cmap='gray')
-        ax[2].imshow(l_fill[p], cmap=cmap1, alpha=0.5*alpha)
+        ax[2].imshow(l_fill[p], cmap=cmap1, alpha=0.5 * alpha)
         if l2_fill is not None:
-            ax[2].imshow(l2_fill[p], cmap=cmap2, alpha=0.5*alpha)
+            ax[2].imshow(l2_fill[p], cmap=cmap2, alpha=0.5 * alpha)
 
         plt.show()
 
@@ -297,7 +296,7 @@ def fill_lumen_meshing(img_3d, vert_list):
         x_min, x_max = int(mins[1]), int(maxes[1])
         y_min, y_max = int(mins[2]), int(maxes[2])
 
-        img_3d[z_min:z_max+1, x_min:x_max+1, y_min:y_max+1] = 1
+        img_3d[z_min:z_max + 1, x_min:x_max + 1, y_min:y_max + 1] = 1
 
     return img_3d
 
@@ -308,6 +307,7 @@ def iterative_lumen_mesh_filling(img_3d, vert_list, max_iters):
     while len(vert_list) > 0 and its < max_iters:
         img_3d = fill_lumen_meshing(img_3d, vert_list)
         mesh, vert_list = generate_surface(img_3d, connected=True, clean=True, fill_internals=True, plot=False)
+        its += 1
 
     return img_3d
 
@@ -318,14 +318,14 @@ def enforce_circular(img_3d_binary, h_pct=1):
     for b_plane in img_3d_binary:
         d_plane = ndi.distance_transform_edt(b_plane)
         s_plane = morphology.skeletonize(b_plane)
-        d_plane = np.asarray(d_plane)*h_pct
+        d_plane = np.asarray(d_plane) * h_pct
         s_plane = np.asarray(s_plane, 'int')
         smoothed_d_plane = smooth_dtransform_auto(d_plane, s_plane, verbose=False)
         dist_stack.append(smoothed_d_plane)
 
     dist_array = np.asarray(dist_stack)
     worst_case_pad = int(np.amax(dist_array) + 0.5)
-    dist_array = np.pad(dist_array, ((worst_case_pad, ), (0, ), (0,)))
+    dist_array = np.pad(dist_array, ((worst_case_pad,), (0,), (0,)))
 
     return fill_circular(dist_array, worst_case_pad)
 
@@ -336,40 +336,52 @@ def fill_circular(padded_dist_array, pad_r):
     img_3d_circ = np.zeros(dim)
     Z = dim[0]
 
-    for z in prange(pad_r, Z-pad_r):
+    for z in prange(pad_r, Z - pad_r):
         maxr = int(np.ceil(np.amax(padded_dist_array[z])))
 
         for z_slice in prange(0, maxr):
             filtered_plane = (maxr - np.ceil(padded_dist_array[z])) <= z_slice
-            img_3d_circ[z + (maxr-z_slice)] = img_3d_circ[z + (maxr-z_slice)] + filtered_plane
-            img_3d_circ[z - (maxr-z_slice)] = img_3d_circ[z - (maxr-z_slice)] + filtered_plane
+            img_3d_circ[z + (maxr - z_slice)] = img_3d_circ[z + (maxr - z_slice)] + filtered_plane
+            img_3d_circ[z - (maxr - z_slice)] = img_3d_circ[z - (maxr - z_slice)] + filtered_plane
 
     return img_3d_circ > 0
 
 
-
-def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, plot_all=False, window_size=(7, 15, 15)):
+def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, close_k=5, plot_all=False, window_size=(7, 15, 15),
+                                 slice_contrast=0, pre_thresh='sauvola'):
     print(' - Converting each z-plane to a binary mask')
     img_2d_stack = np.asarray(img_2d_stack)
-
+    img_stacked = []
     for im_plane in range(0, len(img_2d_stack)):
         im = img_2d_stack[im_plane]
+        if not slice_contrast:
+            im = st2.contrasts(im, plot=False)[slice_contrast]
         im = st2.black_top_hat(im, plot=False, k=bth_k, verbose=False)
         im = st2.white_top_hat(im, plot=False, k=wth_k, verbose=False)
-        img_2d_stack[im_plane] = im
+        img_stacked.append(im)
 
     img_out = []
-    thresh_3d = threshold_sauvola(img_2d_stack, window_size=window_size, k=0.3)
+    if pre_thresh != 'none':
+        thresh_3d = threshold_sauvola(img_2d_stack, window_size=window_size, k=0.3)
+    else:
+        thresh_3d = np.asarray(img_stacked)
 
     for plane in range(0, len(thresh_3d)):
         thresh = thresh_3d[plane] > threshold_li(thresh_3d[plane])
-        img_out.append(st2.close_binary(thresh, k=1, plot=plot_all, verbose=False))
+        img_out.append(st2.close_binary(thresh, k=close_k, plot=False, verbose=False))
 
     img_out = np.asarray(img_out)
     img_out = img_out / np.amax(img_out)
     img_out = morphology.binary_opening(img_out)
     img_out = morphology.binary_closing(img_out)
-    img_out = st2.get_largest_connected_region(img_out, plot=False)
+    # img_out = st2.get_largest_connected_region(img_out, plot=False)
+    if plot_all:
+        tif.imsave('tmp.tiff', np.asarray(img_out, 'uint8'), bigtiff=True)
+        t = tif.imread('tmp.tiff')
+        tif.imshow(t)
+        plt.show()
+        os.remove('tmp.tiff')
+
     return img_out
 
 
@@ -390,12 +402,12 @@ def skeleton_3d(img_3d, squeeze_blobs=False, remove_surfaces=False, surface_tol=
 def squeeze_skelton_blobs(skel_3d):
     print(' - Filling voxels within closed surfaces in skeleton and re-thinning')
     print('\t\t WARNING: This may create parallel skeleton paths. Consider cleaning in network instead')
-    skel_3d = skel_3d/np.amax(skel_3d)
+    skel_3d = skel_3d / np.amax(skel_3d)
     flat_skel = np.sum(skel_3d, axis=0)
     flat_skel = flat_skel > 0
 
     filled_skel = fill_lumen_ray_tracing(skel_3d, flat_skel, n_theta=3, n_phi=3, theta='sweep', mode='uniform',
-                                         max_escape=1,path_l=1, skel=True)
+                                         max_escape=1, path_l=1, skel=True)
 
     filled_skel = morphology.closing(filled_skel)
     filled_skel = morphology.dilation(filled_skel)
@@ -408,15 +420,15 @@ def squeeze_skelton_blobs(skel_3d):
 def remove_skel_surfaces(img_skel, tol=5):
     print(' - Removing residual surfaces from skeletonization')
     print('\t\t WARNING: This may disconnect regions. Consider cleaning in network instead')
-    img_skel = img_skel/np.amax(img_skel)
+    img_skel = img_skel / np.amax(img_skel)
     dim = img_skel.shape
     skel_mask = np.ones(dim)
     dim = list(dim)
 
-    for z in prange(1, dim[0]-1):
-        for x in prange(1, dim[1]-1):
-            for y in prange(1, dim[2]-1):
-                if img_skel[z, x, y] and np.sum(img_skel[z-1:z+2, x-1:x+2, y-1:y+2]) >= tol:
+    for z in prange(1, dim[0] - 1):
+        for x in prange(1, dim[1] - 1):
+            for y in prange(1, dim[2] - 1):
+                if img_skel[z, x, y] and np.sum(img_skel[z - 1:z + 2, x - 1:x + 2, y - 1:y + 2]) >= tol:
                     skel_mask[z, x, y] = 0
 
-    return skel_mask*img_skel
+    return skel_mask * img_skel

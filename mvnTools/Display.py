@@ -56,7 +56,7 @@ def plot_img_and_hist(image, axes, bins=256):
     return ax_img, ax_hist, ax_cdf
 
 
-def review_2d_results(original, mask, dskeleton, distance):
+def review_2d_results(original, mask, dskeleton, distance, saving=False):
     fig, ax = plt.subplots(ncols=3, figsize=(15, 8))
     ax[0].set_title('Original')
     ax[0].imshow(original, cmap='gray')
@@ -69,6 +69,9 @@ def review_2d_results(original, mask, dskeleton, distance):
     ax[2].imshow(original, cmap='gray')
     ax[2].imshow(dskeleton, cmap='Blues', alpha=0.5)
     ax[2].imshow(distance, cmap='Reds', alpha=0.5)
+
+    if saving:
+        return fig
 
     plt.show()
 
