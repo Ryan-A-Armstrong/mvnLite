@@ -180,7 +180,7 @@ def generate_2d_network(img_skel, img_dist,
     print(' \nTransforming image data to network representation (nodes and weighted edges)')
 
     ends, branches = nw2.get_ends_and_branches(img_skel)
-    G, img_skel_erode = nw2.create_Graph_and_Nodes(ends, branches, img_skel)
+    G, img_skel_erode = nw2.create_graph_and_nodes(ends, branches, img_skel)
     G = nw2.fill_edges(G, ends, branches, img_dist, img_skel_erode)
 
     G = nw2.combine_near_nodes_eculid(G, near_node_tol)

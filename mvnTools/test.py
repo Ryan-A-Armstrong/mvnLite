@@ -25,6 +25,12 @@ std_3d_segment(img_2d_stack, img_mask, (1, 1, 4),
 #driver = IO('/home/ryan/Desktop/mvn-analysis/inputs/original_sample.txt', echo_inputs=True)
 #driver = IO('/home/ryan/Desktop/mvn-analysis/inputs/09092019 gel region 10x.txt', echo_inputs=True)
 
-from mvnTools.Mesh import create_ExodusII_file
+from mvnTools import NetworkTools2d as nw2
+from mvnTools.Pipelines import std_2d_segment
+from matplotlib import pyplot as plt
 
-create_ExodusII_file('/home/ryan/Desktop/mvn-analysis/outputs/volume-meshes/original_sample-3d.msh', path_to_e='')
+img_enhanced, img_mask, img_skel, img_dist, img_original = std_2d_segment('/home/ryan/Desktop/mvn-analysis/data/10x.tif', (1.5, 1.5), connected2D=True, generate_mesh_25=False)
+test = nw2.NetworkTools2d(img_skel, img_dist, plot=True, img_enhanced=img_enhanced)
+print(test.img_dir)
+plt.imshow(test.img_dir)
+plt.show()
