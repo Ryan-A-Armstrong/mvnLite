@@ -10,7 +10,7 @@ from skimage.morphology import dilation, closing
 from mvnTools import Display as d
 from mvnTools import Mesh as m
 from mvnTools import MeshTools2d as mt2
-from mvnTools import NetworkTools2d as nw2
+from mvnTools import Network2d as nw2
 from mvnTools import SegmentTools2d as st2
 from mvnTools import SegmentTools3d as st3
 from mvnTools.TifStack import TifStack as ts

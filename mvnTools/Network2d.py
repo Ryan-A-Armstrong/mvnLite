@@ -8,102 +8,6 @@ def euclid_dist_between_nodes(n1, n2):
     return np.sqrt((n1[0] - n2[0]) ** 2 + (n1[1] - n2[1]) ** 2)
 
 
-def get_ends_and_branches(img_skel):
-    print('\t - Identifying locations of branches and ends')
-    ends = []
-    branches = []
-
-    img_skel = np.asarray(img_skel, 'uint8')
-    img_skel = img_skel / (np.amax(img_skel))
-    dim = img_skel.shape
-
-    for y in range(0, dim[0]):
-        for x in range(0, dim[1]):
-
-            # Get the index of skeleton point
-            if img_skel[x, y] == 1:
-                xl, xr = None, None
-                yt, yb = None, None
-
-                ####### Nominal case ####### (not on any edges)
-                if (0 < x < dim[0]) and (0 < y < dim[1]):
-                    xl, xr = 1, 2
-                    yt, yb = 1, 2
-
-                ####### Check Corners ######
-                # Top Left
-                elif x == 0 and y == 0:
-                    xl, xr = 0, 2
-                    yt, yb = 0, 2
-
-                # Top Right
-                elif x == dim[0] and y == 0:
-                    xl, xr = 1, 1
-                    yt, yb = 0, 2
-
-                # Bottom Right
-                elif x == dim[0] and y == dim[1]:
-                    xl, xr = 1, 1
-                    yt, yb = 1, 1
-
-                # Bottom Left
-                elif x == 0 and y == dim[1]:
-                    xl, xr = 0, 2
-                    yt, yb = 1, 1
-
-
-                ###### Check Edges #######
-                # Left Edge
-                elif x == 0:
-                    xl, xr = 0, 2
-                    yt, yb = 1, 2
-
-                # Top Edge
-                elif y == 0:
-                    xl, xr = 1, 2
-                    yt, yb = 0, 2
-
-                # Right Edge
-                elif x == dim[0]:
-                    xl, xr = 1, 1
-                    yt, yb = 1, 2
-
-                # Bottom Edge
-                elif y == dim[1]:
-                    xl, xr = 1, 2
-                    yt, yb = 1, 1
-
-                num_neighbors = np.sum(img_skel[x - xl: x + xr, y - yt:y + yb]) - 1
-                if num_neighbors == 1:
-                    ends.append((y, x))
-                elif num_neighbors >= 3:
-                    branches.append((y, x))
-
-    ends = set(ends)
-    branches = set(branches)
-
-    return ends, branches
-
-
-def create_graph_and_nodes(ends, branches, img_skel):
-    print('\t - Establishing graph with branch and end nodes')
-    G = nx.Graph()
-    img_skel_erode = img_skel.copy()
-
-    nodeID = 0
-    for b in branches:
-        G.add_node(b)
-        img_skel_erode[b[1], b[0]] = 0
-        nodeID += 1
-
-    for e in ends:
-        G.add_node(e)
-        img_skel_erode[e[1], e[0]] = 0
-        nodeID += 1
-
-    return G, img_skel_erode
-
-
 def get_dir_masks():
     direction_masks = []
     for dir_mask_index in range(1, 10):
@@ -114,65 +18,7 @@ def get_dir_masks():
     return direction_masks
 
 
-def create_direction_transform(img_dir, img_skel_erode, loc, direction_masks):
-    neighbors = img_skel_erode[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2]
-    for i in range(0, len(direction_masks)):
-        img_dir[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2] += (i + 1) * neighbors * direction_masks[i]
-
-    return img_dir
-
-
-def edge_walk(loc, img_skel_erode, img_dist_t, G, origin, length_tot, width_vals, end_set, branch_set,
-              img_dir, direction_masks):
-    loc = (int(loc[0]), int(loc[1]))
-    img_skel_erode[loc] = 0
-    img_dir = create_direction_transform(img_dir, img_skel_erode, loc, direction_masks)
-
-    neighbors = np.where(img_skel_erode[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2])
-    N = int(np.sum(img_skel_erode[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2]))
-    for n in range(0, N):
-        width_vals.append(img_dist_t[loc])
-        edge_walk((neighbors[0][n] - 1 + loc[0], neighbors[1][n] - 1 + loc[1]),
-                  img_skel_erode,
-                  img_dist_t,
-                  G,
-                  origin,
-                  length_tot + np.sqrt((neighbors[1] - loc[1]) ** 2 + (neighbors[0] - loc[0]) ** 2),
-                  width_vals,
-                  end_set, branch_set,
-                  img_dir, direction_masks)
-
-    if N == 0:
-        for dim0 in range(-1, 2):
-            for dim1 in range(-1, 2):
-                if ((loc[1] + dim1, loc[0] + dim0) in end_set) or ((loc[1] + dim1, loc[0] + dim0) in branch_set):
-                    width_vals.append(img_dist_t[loc[0] + dim0, loc[1] + dim1])
-                    G.add_edge(origin,
-                               (loc[1] + dim1, loc[0] + dim0),
-                               length=length_tot + np.sqrt(dim1 ** 2 + dim0 ** 2),
-                               widths=width_vals)
-
-
-def fill_edges(G, ends, branches, img_dist, img_skel_erode):
-    print('\t - Connecting nodes with weighted edges')
-    direction_masks = get_dir_masks()
-    img_dir = np.zeros(img_skel_erode.shape)
-
-    for b in branches:
-        loc = (b[1], b[0])
-        img_dist_t = img_dist
-        origin = b
-        length_tot = 0
-        width_vals = []
-        end_set = ends
-        branch_set = branches
-        edge_walk(loc, img_skel_erode, img_dist_t, G, origin, length_tot, width_vals, end_set, branch_set,
-                  img_dir, direction_masks)
-
-    return G
-
-
-class NetworkTools2d:
+class Network2d:
     G = None
     near_node_tol = 5
     length_tol = 1
@@ -186,11 +32,13 @@ class NetworkTools2d:
     pos = None
     img_enhanced = np.zeros(0)
 
-    def __init__(self, img_skel, img_dist, near_node_tol=5, length_tol=1, plot=False, img_enhanced=np.zeros(0)):
+    def __init__(self, img_skel, img_dist, near_node_tol=5, length_tol=1, min_nodes=3,
+                 plot=False, img_enhanced=np.zeros(0)):
         self.img_skel = img_skel
         self.img_dist = img_dist
         self.near_node_tol = near_node_tol
         self.length_tol = length_tol
+        self.min_nodes = min_nodes
         self.img_enhanced = img_enhanced
 
         self.get_ends_and_branches()
@@ -201,6 +49,8 @@ class NetworkTools2d:
         self.average_dupedge_lengths()
         self.combine_near_nodes_length()
         self.remove_zero_length_edges()
+
+        self.remove_small_subgraphs()
 
         self.get_pos_dict()
 
@@ -304,7 +154,12 @@ class NetworkTools2d:
     def create_direction_transform(self, loc, direction_masks):
         neighbors = self.img_skel_erode[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2]
         for i in range(0, len(direction_masks)):
-            self.img_dir[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2] += (i + 1) * neighbors * direction_masks[i]
+            j = i + 1
+            if i == 4:
+                j = 0
+            elif i > 4:
+                j = 9 - i
+            self.img_dir[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2] += j * neighbors * direction_masks[i]
 
     def fill_edges(self):
         print('\t - Connecting nodes with weighted edges')
@@ -349,7 +204,8 @@ class NetworkTools2d:
         for n1 in self.G.nodes():
             for n2 in self.G.nodes():
                 if n1 != n2 and euclid_dist_between_nodes(n1, n2) < self.near_node_tol:
-                    self.G = nx.contracted_nodes(self.G, n1, n2)
+                    if n1 in self.G and n2 in self.G:
+                        self.G = nx.contracted_nodes(self.G, n1, n2)
 
     def average_dupedge_lengths(self):
         print('\t - Cleaning edge lengths')
@@ -363,7 +219,8 @@ class NetworkTools2d:
             if e[2]['length'] <= self.length_tol:
                 short_list.append((e[0], e[1]))
         for i in range(0, len(short_list)):
-            self.G = nx.contracted_nodes(self.G, short_list[i][0], short_list[i][1])
+            if short_list[i][0] in self.G and short_list[i][1] in self.G:
+                self.G = nx.contracted_nodes(self.G, short_list[i][0], short_list[i][1])
 
     def remove_zero_length_edges(self):
         print('\t - Removing edges of length zero')
@@ -374,6 +231,13 @@ class NetworkTools2d:
 
         for i in range(0, len(rem_list)):
             self.G.remove_edge(rem_list[i][0], rem_list[i][1])
+
+    def remove_small_subgraphs(self):
+        graphs = list(nx.connected_components(self.G))
+        for g in graphs:
+            if len(g) < self.min_nodes:
+                for node in g:
+                    self.G.remove_node(node)
 
     def get_pos_dict(self):
         position_dic = {}
