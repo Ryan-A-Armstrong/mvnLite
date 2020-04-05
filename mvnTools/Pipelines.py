@@ -116,6 +116,8 @@ def std_2d_segment(tif_file, scale_xy,
             os.mkdir(output_dir + 'review-segment2D/')
         d.review_2d_results(img_enhanced, img_mask, dilation(img_skel), img_dist,
                             saving=True).savefig(output_dir + 'review-segment2D/' + name + '.png')
+        plt.show(block=False)
+        plt.close()
 
     if generate_mesh_25:
         segment_2d_to_meshes(img_dist, img_skel, connected_mesh=connected_mesh, connected_vol=connected_vol,

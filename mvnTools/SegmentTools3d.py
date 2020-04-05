@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from numba import jit, njit, prange
 from scipy import ndimage as ndi
-from skimage import morphology, transform, filters
+from skimage import morphology, transform, filters, io
 from skimage.external import tifffile as tif
 from skimage.filters import threshold_li, threshold_sauvola
 
@@ -265,6 +265,8 @@ def fill_lumen_ellipsoid(img_3d, img_mask,
 
 def show_lumen_fill(img_25d, l_fill, l2_fill=None, cmap1='Blues', cmap2='Reds'):
     dims = img_25d.shape
+    tiff_stack = []
+
     for p in range(0, dims[0]):
         fig, ax = plt.subplots(ncols=3, figsize=(15, 8))
         ax[0].set_title('Original')
@@ -283,7 +285,18 @@ def show_lumen_fill(img_25d, l_fill, l2_fill=None, cmap1='Blues', cmap2='Reds'):
         if l2_fill is not None:
             ax[2].imshow(l2_fill[p], cmap=cmap2, alpha=0.5 * alpha)
 
-        plt.show()
+        plt.savefig('tmppage.png')
+        tiff_stack.append(io.imread('tmppage.png'))
+        plt.show(block=False)
+        plt.close()
+
+    tif.imsave('tmptiff.tiff', np.asarray(tiff_stack), bigtiff=True)
+    t = tif.imread('tmptiff.tiff')
+    tif.imshow(t)
+    plt.show()
+    os.remove('tmppage.png')
+    os.remove('tmptiff.tiff')
+    plt.close()
 
 
 @jit(parallel=True)
@@ -347,14 +360,14 @@ def fill_circular(padded_dist_array, pad_r):
     return img_3d_circ > 0
 
 
-def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, close_k=5, plot_all=False, window_size=(7, 15, 15),
+def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, close_k=1, plot_all=False, window_size=(7, 15, 15),
                                  slice_contrast=0, pre_thresh='sauvola'):
     print(' - Converting each z-plane to a binary mask')
     img_2d_stack = np.asarray(img_2d_stack)
     img_stacked = []
     for im_plane in range(0, len(img_2d_stack)):
         im = img_2d_stack[im_plane]
-        if not slice_contrast:
+        if slice_contrast:
             im = st2.contrasts(im, plot=False)[slice_contrast]
         im = st2.black_top_hat(im, plot=False, k=bth_k, verbose=False)
         im = st2.white_top_hat(im, plot=False, k=wth_k, verbose=False)
@@ -362,7 +375,7 @@ def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, close_k=5, plot
 
     img_out = []
     if pre_thresh != 'none':
-        thresh_3d = threshold_sauvola(img_2d_stack, window_size=window_size, k=0.3)
+        thresh_3d = threshold_sauvola(np.asarray(img_stacked), window_size=window_size, k=0.3)
     else:
         thresh_3d = np.asarray(img_stacked)
 
@@ -374,7 +387,7 @@ def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, close_k=5, plot
     img_out = img_out / np.amax(img_out)
     img_out = morphology.binary_opening(img_out)
     img_out = morphology.binary_closing(img_out)
-    # img_out = st2.get_largest_connected_region(img_out, plot=False)
+    img_out = st2.get_largest_connected_region(img_out, plot=False, verbose=False)
     if plot_all:
         tif.imsave('tmp.tiff', np.asarray(img_out, 'uint8'), bigtiff=True)
         t = tif.imread('tmp.tiff')

@@ -354,10 +354,11 @@ class IO:
 
             img_2d_stack = img_original.get_pages()
             scale_factor = img_original.downsample_factor
+            print('\n\nScale factor: %f' % scale_factor)
             std_3d_segment(img_2d_stack, img_mask,
                            scale=(self.input_dic['SCALE_X'] * scale_factor,
                                   self.input_dic['SCALE_Y'] * scale_factor,
-                                  self.input_dic['SCALE_Z'] * scale_factor),
+                                  self.input_dic['SCALE_Z'] * 1),
                            slice_contrast=self.input_dic['SLICE_CONTRAST'],
                            pre_thresh=self.input_dic['PRE_THRESH'],
                            maxr=self.input_dic['MAXR'],
