@@ -1,6 +1,6 @@
 from matplotlib import pyplot as plt
-from skimage import img_as_float, exposure
 from mayavi import mlab
+from skimage import img_as_float, exposure
 
 '''
 Code is taken from examples on skimage documentation. 

@@ -1,12 +1,11 @@
 import numpy as np
-import os
 from matplotlib import pyplot as plt
+from scipy import ndimage as ndi
 from scipy.ndimage import gaussian_filter
 from skimage import exposure, img_as_float, img_as_ubyte, filters, measure
 from skimage.filters.thresholding import _cross_entropy
 from skimage.morphology import white_tophat, black_tophat, disk, reconstruction, opening, closing, dilation, skeletonize
 from skimage.segmentation import random_walker
-from scipy import ndimage as ndi
 
 from mvnTools import Display as d
 

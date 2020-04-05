@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit, prange
 
+
 @njit(parallel=True)
 def smooth_dtransform_auto(img_dist, img_skel, verbose=True):
     if verbose:
@@ -8,8 +9,8 @@ def smooth_dtransform_auto(img_dist, img_skel, verbose=True):
         print('\t\t - Automating kernel size along skeleton path')
     dim = list(img_dist.shape)
 
-    img_skel = img_skel/np.amax(img_skel)
-    kernel_map = img_dist*img_skel
+    img_skel = img_skel / np.amax(img_skel)
+    kernel_map = img_dist * img_skel
 
     img_round = np.zeros(img_dist.shape)
     count_map = np.zeros(img_dist.shape)
@@ -18,8 +19,8 @@ def smooth_dtransform_auto(img_dist, img_skel, verbose=True):
         for y in prange(0, dim[1]):
             if kernel_map[x, y] > 0:
                 kr = np.ceil(kernel_map[x, y])
-                x_min, y_min = int(x-kr-1), int(y-kr-1)
-                x_max, y_max = int(x+kr+1), int(y+kr+1)
+                x_min, y_min = int(x - kr - 1), int(y - kr - 1)
+                x_max, y_max = int(x + kr + 1), int(y + kr + 1)
 
                 if x_min < 0:
                     x_min = 0
@@ -35,13 +36,13 @@ def smooth_dtransform_auto(img_dist, img_skel, verbose=True):
                 k_max = np.amax(k_array)
                 k_min = np.amin(k_array)
 
-                img_round[x_min:x_max, y_min:y_max] += np.sqrt((k_max - k_min)**2 - (k_max - k_array)**2) + k_min
+                img_round[x_min:x_max, y_min:y_max] += np.sqrt((k_max - k_min) ** 2 - (k_max - k_array) ** 2) + k_min
                 count_map[x_min:x_max, y_min:y_max] += 1
 
     if verbose:
         print('\t\t - Smoothing transforms between kernels')
     count_map = np.where(count_map == 0, 1, count_map)
-    img_round = img_round/count_map
+    img_round = img_round / count_map
 
     return img_round
 
@@ -62,6 +63,3 @@ def img_dist_to_img_volume(img_dist):
     img_3d = np.append(img_3d, np.flip(img_3d, axis=0), axis=0)
 
     return img_3d
-
-
-

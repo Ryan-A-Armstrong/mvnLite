@@ -1,7 +1,8 @@
-import numpy as np
 import networkx as nx
+import numpy as np
 from matplotlib import pyplot as plt
-from skimage import transform, io
+from skimage import transform
+
 
 def euclid_dist_between_nodes(n1, n2):
     return np.sqrt((n1[0]-n2[0])**2+(n1[1]-n2[1])**2)

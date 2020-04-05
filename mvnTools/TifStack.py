@@ -1,7 +1,7 @@
+import ntpath
 import warnings
 
 import numpy as np
-import ntpath
 from PIL import Image
 from skimage import img_as_uint, transform
 
