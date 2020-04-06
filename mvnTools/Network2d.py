@@ -29,6 +29,14 @@ class Network2d:
     img_skel_erode = None
     img_dir = None
 
+    total_length = 0
+    total_volume = 0
+    total_surface = 0
+
+    lengths = None
+    volumes = None
+    surfaces = None
+
     pos = None
     img_enhanced = np.zeros(0)
 
@@ -46,12 +54,11 @@ class Network2d:
         self.fill_edges()
 
         self.combine_near_nodes_eculid()
-        self.average_dupedge_lengths()
         self.combine_near_nodes_length()
         self.remove_zero_length_edges()
 
         self.remove_small_subgraphs()
-
+        self.get_tots_and_hist()
         self.get_pos_dict()
 
         if plot:
@@ -159,7 +166,8 @@ class Network2d:
                 j = 0
             elif i > 4:
                 j = 9 - i
-            self.img_dir[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2] += j * neighbors * direction_masks[i]
+            if neighbors.shape == (3, 3):
+                self.img_dir[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2] += j * neighbors * direction_masks[i]
 
     def fill_edges(self):
         print('\t - Connecting nodes with weighted edges')
@@ -170,10 +178,11 @@ class Network2d:
             loc = (b[1], b[0])
             origin = b
             length_tot = 0
-            width_vals = []
-            self.edge_walk(loc, origin, length_tot, width_vals, direction_masks)
+            volume_tot = 0
+            surface_tot = 0
+            self.edge_walk(loc, origin, length_tot, volume_tot, surface_tot, direction_masks)
 
-    def edge_walk(self, loc, origin, length_tot, width_vals, direction_masks):
+    def edge_walk(self, loc, origin, length_tot, volume_tot, surface_tot, direction_masks):
         loc = (int(loc[0]), int(loc[1]))
         self.img_skel_erode[loc] = 0
         self.create_direction_transform(loc, direction_masks)
@@ -181,11 +190,13 @@ class Network2d:
         neighbors = np.where(self.img_skel_erode[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2])
         N = int(np.sum(self.img_skel_erode[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2]))
         for n in range(0, N):
-            width_vals.append(self.img_dist[loc])
+            radius = self.img_dist[loc]
+            length = np.sqrt((neighbors[0][n] - 1) ** 2 + (neighbors[1][n] - 1) ** 2)
             self.edge_walk((neighbors[0][n] - 1 + loc[0], neighbors[1][n] - 1 + loc[1]),
                            origin,
-                           length_tot + np.sqrt((neighbors[1] - loc[1]) ** 2 + (neighbors[0] - loc[0]) ** 2),
-                           width_vals,
+                           length_tot + length,
+                           volume_tot + length * np.pi * radius ** 2,
+                           surface_tot + length * 2 * radius * np.pi,
                            direction_masks)
 
         if N == 0:
@@ -193,11 +204,10 @@ class Network2d:
                 for dim1 in range(-1, 2):
                     if ((loc[1] + dim1, loc[0] + dim0) in self.ends) or (
                             (loc[1] + dim1, loc[0] + dim0) in self.branches):
-                        width_vals.append(self.img_dist[loc[0] + dim0, loc[1] + dim1])
                         self.G.add_edge(origin,
                                         (loc[1] + dim1, loc[0] + dim0),
                                         length=length_tot + np.sqrt(dim1 ** 2 + dim0 ** 2),
-                                        widths=width_vals)
+                                        volume=volume_tot, surface=surface_tot)
 
     def combine_near_nodes_eculid(self):
         print('\t - Combining nodes which are within %d microns of each other (spacial)' % self.near_node_tol)
@@ -206,11 +216,6 @@ class Network2d:
                 if n1 != n2 and euclid_dist_between_nodes(n1, n2) < self.near_node_tol:
                     if n1 in self.G and n2 in self.G:
                         self.G = nx.contracted_nodes(self.G, n1, n2)
-
-    def average_dupedge_lengths(self):
-        print('\t - Cleaning edge lengths')
-        for e in self.G.edges.data():
-            e[2]['length'] = np.mean(e[2]['length'])
 
     def combine_near_nodes_length(self):
         print('\t - Combining nodes which are within %d microns of each other (path length)' % self.length_tol)
@@ -231,6 +236,19 @@ class Network2d:
 
         for i in range(0, len(rem_list)):
             self.G.remove_edge(rem_list[i][0], rem_list[i][1])
+
+    def get_tots_and_hist(self):
+        self.total_length, self.total_volume, self.total_surface = 0, 0, 0
+        self.lengths, self.volumes, self.surfaces = [], [], []
+
+        for e in self.G.edges.data():
+            self.lengths.append(e[2]['length'])
+            self.volumes.append(e[2]['volume'])
+            self.surfaces.append(e[2]['surface'])
+
+        self.total_length = sum(self.lengths)
+        self.total_volume = sum(self.volumes)
+        self.total_surface = sum(self.surfaces)
 
     def remove_small_subgraphs(self):
         graphs = list(nx.connected_components(self.G))

@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 from PIL import Image
-from skimage import img_as_uint, transform
+from skimage import img_as_uint, transform, color
 
 
 class TifStack:
