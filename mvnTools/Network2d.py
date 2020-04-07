@@ -36,6 +36,7 @@ class Network2d:
     lengths = None
     volumes = None
     surfaces = None
+    radii = None
     contractions = None
     fractal_scores = None
 
@@ -210,10 +211,12 @@ class Network2d:
                         self.G.add_edge(origin,
                                         (loc[1] + dim1, loc[0] + dim0),
                                         length=length_tot + np.sqrt(dim1 ** 2 + dim0 ** 2),
-                                        volume=volume_tot, surface=surface_tot, contraction=0, fractal=0)
+                                        volume=volume_tot, surface=surface_tot,
+                                        radius=np.sqrt(volume_tot / max(length_tot, 1)/ np.pi),
+                                        contraction=0, fractal=0)
 
     def collapse_nodes(self, n1, n2):
-        avg_loc = (int((n1[0] + n2[0])/2 + 0.5), int((n1[1] + n2[1])/2 + 0.5))
+        avg_loc = (int((n1[0] + n2[0]) / 2 + 0.5), int((n1[1] + n2[1]) / 2 + 0.5))
         contracted_len = 0
         if (n1, n2) in self.G.edges:
             contracted_len = self.G.edges[n1, n2]['length']
@@ -246,7 +249,6 @@ class Network2d:
                             self.collapse_nodes(n1, n2)
                             num_collapse += 1
 
-
     def combine_near_nodes_length(self):
         print('\t - Combining nodes which are within %d microns of each other (path length)' % self.length_tol)
         short_list = []
@@ -278,7 +280,8 @@ class Network2d:
 
     def get_tots_and_hist(self):
         self.total_length, self.total_volume, self.total_surface = 0, 0, 0
-        self.lengths, self.volumes, self.surfaces, self.contractions, self.fractal_scores= [], [], [], [], []
+        self.lengths, self.volumes, self.surfaces, self.radii, self.contractions, self.fractal_scores = \
+            [], [], [], [], [], []
 
         for e in self.G.edges.data():
             n1 = e[0]
@@ -286,8 +289,9 @@ class Network2d:
             length = e[2]['length']
             volume = e[2]['volume']
             surface = e[2]['surface']
+            radius = e[2]['radius']
             displacement = euclid_dist_between_nodes(n1, n2)
-            contraction = displacement/length
+            contraction = displacement / length
             fractal = np.log(length) / np.log(displacement)
 
             if contraction > 1:
@@ -302,6 +306,7 @@ class Network2d:
             self.lengths.append(length)
             self.volumes.append(volume)
             self.surfaces.append(surface)
+            self.radii.append(radius)
             self.contractions.append(contraction)
             self.fractal_scores.append(fractal)
 
