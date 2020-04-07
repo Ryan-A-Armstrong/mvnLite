@@ -82,15 +82,16 @@ def plot_directionality(img_dir, img_enhanced, num_subsections=10, img_dist=None
     plt.show()
 
 def closeness_vitatlity(G, img_enhanced):
-    print(nx.get_edge_attributes(G, 'length'))
-    print(nx.get_edge_attributes(G, 'volume'))
-    print(nx.get_edge_attributes(G, 'surface'))
-    cv_dic = nx.closeness_vitality(G)
-    print(cv_dic)
-    #cv_dic = nx.dispersion(G)
+    #cv_dic = nx.closeness_vitality(G, 'length')
+    #print('closeness vitatlity')
     #print(cv_dic)
+    #cv_dic2 = nx.dispersion(G, 'length')
+    #print('dispersion')
+    #print(cv_dic2)
+    print('shortest path')
     print(nx.average_shortest_path_length(G, 'length'))
-    print(nx.average_shortest_path_length(G, 'volume'))
+
+    '''
     lc_dic = nx.load_centrality(G)
 
     xs = []
@@ -133,4 +134,4 @@ def closeness_vitatlity(G, img_enhanced):
     plt.imshow(img_enhanced, alpha=0.5, cmap='gray')
     plt.imshow(value_mask, alpha=0.8, cmap='afmhot', vmin=minval, vmax=maxval)
     plt.show()
-
+    '''

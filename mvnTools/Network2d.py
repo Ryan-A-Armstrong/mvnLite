@@ -36,12 +36,14 @@ class Network2d:
     lengths = None
     volumes = None
     surfaces = None
+    contractions = None
+    fractal_scores = None
 
     pos = None
     img_enhanced = np.zeros(0)
 
     def __init__(self, img_skel, img_dist, near_node_tol=5, length_tol=1, min_nodes=3,
-                 plot=False, img_enhanced=np.zeros(0)):
+                 plot=True, img_enhanced=np.zeros(0)):
         self.img_skel = img_skel
         self.img_dist = img_dist
         self.near_node_tol = near_node_tol
@@ -56,6 +58,7 @@ class Network2d:
         self.combine_near_nodes_eculid()
         self.combine_near_nodes_length()
         self.remove_zero_length_edges()
+        self.remove_self_loops()
 
         self.remove_small_subgraphs()
         self.get_tots_and_hist()
@@ -207,15 +210,42 @@ class Network2d:
                         self.G.add_edge(origin,
                                         (loc[1] + dim1, loc[0] + dim0),
                                         length=length_tot + np.sqrt(dim1 ** 2 + dim0 ** 2),
-                                        volume=volume_tot, surface=surface_tot)
+                                        volume=volume_tot, surface=surface_tot, contraction=0, fractal=0)
+
+    def collapse_nodes(self, n1, n2):
+        avg_loc = (int((n1[0] + n2[0])/2 + 0.5), int((n1[1] + n2[1])/2 + 0.5))
+        contracted_len = 0
+        if (n1, n2) in self.G.edges:
+            contracted_len = self.G.edges[n1, n2]['length']
+        elif (n2, n1) in self.G.edges:
+            contracted_len = self.G.edges[n2, n1]['length']
+
+        new_connects = []
+        for connects in self.G.edges(n2):
+            new_connects.append(connects[1])
+
+        self.G = nx.contracted_nodes(self.G, n1, n2, self_loops=False)
+
+        for ncs in new_connects:
+            if (n1, ncs) in self.G.edges(n1) and ncs != n1:
+                self.G.edges[n1, ncs]['length'] = self.G.edges[n1, ncs]['length'] + contracted_len
+            elif (ncs, n1) in self.G.edges and ncs != n1:
+                self.G.edges[ncs, n1]['length'] = self.G.edges[n1, ncs]['length'] + contracted_len
+
+        self.G = nx.relabel_nodes(self.G, {n1: avg_loc}, copy=False)
 
     def combine_near_nodes_eculid(self):
         print('\t - Combining nodes which are within %d microns of each other (spacial)' % self.near_node_tol)
-        for n1 in self.G.nodes():
-            for n2 in self.G.nodes():
-                if n1 != n2 and euclid_dist_between_nodes(n1, n2) < self.near_node_tol:
-                    if n1 in self.G and n2 in self.G:
-                        self.G = nx.contracted_nodes(self.G, n1, n2)
+        num_collapse = 1
+        while num_collapse > 0:
+            num_collapse = 0
+            for n1 in self.G.nodes():
+                for n2 in self.G.nodes():
+                    if n1 != n2 and euclid_dist_between_nodes(n1, n2) < self.near_node_tol:
+                        if n1 in self.G and n2 in self.G:
+                            self.collapse_nodes(n1, n2)
+                            num_collapse += 1
+
 
     def combine_near_nodes_length(self):
         print('\t - Combining nodes which are within %d microns of each other (path length)' % self.length_tol)
@@ -225,7 +255,7 @@ class Network2d:
                 short_list.append((e[0], e[1]))
         for i in range(0, len(short_list)):
             if short_list[i][0] in self.G and short_list[i][1] in self.G:
-                self.G = nx.contracted_nodes(self.G, short_list[i][0], short_list[i][1])
+                self.collapse_nodes(short_list[i][0], short_list[i][1])
 
     def remove_zero_length_edges(self):
         print('\t - Removing edges of length zero')
@@ -237,14 +267,43 @@ class Network2d:
         for i in range(0, len(rem_list)):
             self.G.remove_edge(rem_list[i][0], rem_list[i][1])
 
+    def remove_self_loops(self):
+        rem_list = []
+        for e in self.G.edges.data():
+            if e[0] == e[1]:
+                rem_list.append(e)
+
+        for removes in rem_list:
+            self.G.remove_edge(removes[0], removes[1])
+
     def get_tots_and_hist(self):
         self.total_length, self.total_volume, self.total_surface = 0, 0, 0
-        self.lengths, self.volumes, self.surfaces = [], [], []
+        self.lengths, self.volumes, self.surfaces, self.contractions, self.fractal_scores= [], [], [], [], []
 
         for e in self.G.edges.data():
-            self.lengths.append(e[2]['length'])
-            self.volumes.append(e[2]['volume'])
-            self.surfaces.append(e[2]['surface'])
+            n1 = e[0]
+            n2 = e[1]
+            length = e[2]['length']
+            volume = e[2]['volume']
+            surface = e[2]['surface']
+            displacement = euclid_dist_between_nodes(n1, n2)
+            contraction = displacement/length
+            fractal = np.log(length) / np.log(displacement)
+
+            if contraction > 1:
+                contraction = 1
+
+            if fractal == 0 or fractal == float('inf'):
+                fractal = 1
+
+            e[2]['contraction'] = contraction
+            e[2]['fractal'] = fractal
+
+            self.lengths.append(length)
+            self.volumes.append(volume)
+            self.surfaces.append(surface)
+            self.contractions.append(contraction)
+            self.fractal_scores.append(fractal)
 
         self.total_length = sum(self.lengths)
         self.total_volume = sum(self.volumes)

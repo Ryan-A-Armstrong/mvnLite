@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 from PIL import Image
-from skimage import img_as_uint, transform, color
+from skimage import img_as_uint, img_as_float, transform, color
 
 
 class TifStack:
@@ -38,7 +38,7 @@ class TifStack:
                 if dim[0] > 512 or dim[1] > 512:
                     self.downsample_factor = max(dim[0], dim[1])/512
                     image = transform.resize(image,
-                                             int(dim[0]/self.downsample_factor), int(dim[1]/self.downsample_factor))
+                                             (int(dim[0]/self.downsample_factor), int(dim[1]/self.downsample_factor)))
 
             except EOFError:
                 break
@@ -56,6 +56,7 @@ class TifStack:
         if self.tif_pages is None:
             self.set_pages()
         flat_sum = np.sum(self.tif_pages, axis=0)
+        flat_sum = flat_sum/np.amax(flat_sum)
         warnings.filterwarnings('ignore')
 
         return img_as_uint(flat_sum)
