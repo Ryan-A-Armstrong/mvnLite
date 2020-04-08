@@ -1,3 +1,5 @@
+import os
+
 import networkx as nx
 import numpy as np
 from matplotlib import pyplot as plt
@@ -44,7 +46,7 @@ class Network2d:
     img_enhanced = np.zeros(0)
 
     def __init__(self, img_skel, img_dist, near_node_tol=5, length_tol=1, min_nodes=3,
-                 plot=True, img_enhanced=np.zeros(0)):
+                 plot=False, img_enhanced=np.zeros(0), output_dir='', name='', save_files=True):
         self.img_skel = img_skel
         self.img_dist = img_dist
         self.near_node_tol = near_node_tol
@@ -65,10 +67,21 @@ class Network2d:
         self.get_tots_and_hist()
         self.get_pos_dict()
 
-        if plot:
+        save_path = ''
+        if save_files:
+            if not os.path.isdir(output_dir + 'networks/'):
+                os.mkdir(output_dir + 'networks/')
+            if not os.path.isdir(output_dir + 'networks/' + name + '/'):
+                os.mkdir(output_dir + 'networks/' + name + '/')
+            save_path = output_dir + 'networks/' + name + '/'
+
+            nx.write_gpickle(self.G, save_path + 'Graph.gpickle')
+
+        if plot or save_files:
             self.show_graph(with_pos=self.pos, with_background=img_enhanced,
-                            with_skel=morphology.dilation(self.img_skel))
-            self.show_graph()
+                            with_skel=morphology.dilation(self.img_skel), save=save_files,
+                            save_path=save_path + 'with_background.png', show=plot)
+            self.show_graph(save=save_files, save_path=save_path + 'without_background.png', show=plot)
 
     def get_ends_and_branches(self):
         print('\t - Identifying locations of branches and ends')
@@ -212,7 +225,7 @@ class Network2d:
                                         (loc[1] + dim1, loc[0] + dim0),
                                         length=length_tot + np.sqrt(dim1 ** 2 + dim0 ** 2),
                                         volume=volume_tot, surface=surface_tot,
-                                        radius=np.sqrt(volume_tot / max(length_tot, 1)/ np.pi),
+                                        radius=np.sqrt(volume_tot / max(length_tot, 1) / np.pi),
                                         contraction=0, fractal=0)
 
     def collapse_nodes(self, n1, n2):
@@ -328,7 +341,8 @@ class Network2d:
 
         self.pos = position_dic
 
-    def show_graph(self, with_pos=None, with_background=np.zeros(0), img_dim=None, with_skel=np.zeros(0)):
+    def show_graph(self, with_pos=None, with_background=np.zeros(0), img_dim=None, with_skel=np.zeros(0),
+                   save=False, save_path='', show=True):
         plt.figure(figsize=(20, 20))
         edge_color = 'k'
         font_color = 'k'
@@ -348,4 +362,12 @@ class Network2d:
 
         nx.draw(self.G, pos=with_pos, with_labels=True, edge_color=edge_color, font_color=font_color,
                 font_weight='bold')
-        plt.show()
+
+        if save:
+            plt.savefig(save_path)
+
+        if not show:
+            plt.show(block=False)
+            plt.close()
+        else:
+            plt.show()

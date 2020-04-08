@@ -1,5 +1,5 @@
-import numpy as np
 import networkx as nx
+import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
@@ -43,12 +43,22 @@ def get_directionality_pct_pix(img_dir, img_dist=None, weighted=False, outputdir
     zscore = (np.max(data) - np.mean(data)) / np.std(data)
 
     print('\n2D Directionality Summary. Weighted is %r.' % weighted)
-    print('  Percent Vertical:\t\t %.4f\n  Percent Horizontal:\t %.4f\n'
+    print('  Percent Vertical:\t %.4f\n  Percent Horizontal:\t %.4f\n'
           '  Percent L. Diagonal:\t %.4f\n  Percent R. Diagonal:\t %.4f\n' % (vert, horz, left, right))
-    print('  Z-Score:\t %.4f\n' % zscore)
+    print('  Z-Score of max:\t %.4f\n' % zscore)
+
+    if save_vals:
+        file = outputdir + 'calculated_values.txt'
+        file = open(file, 'a')
+        file.write('\n2D Directionality Summary. Weighted is %r.\n\n' % weighted)
+        file.write('  Percent Vertical:\t %.4f\n  Percent Horizontal:\t %.4f\n'
+                   '  Percent L. Diagonal:\t %.4f\n  Percent R. Diagonal:\t %.4f\n' % (vert, horz, left, right))
+        file.write('\n  Z-Score of max:\t %.4f\n' % zscore)
+        file.close()
 
 
-def plot_directionality(img_dir, img_enhanced, num_subsections=10, img_dist=None, weighted=False, outputdir='',
+def plot_directionality(img_dir, img_enhanced, num_subsections=10, img_dist=None, weighted=False, output_dir='',
+                        show=False,
                         save_plot=False):
     dim = img_enhanced.shape
 
@@ -79,15 +89,27 @@ def plot_directionality(img_dir, img_enhanced, num_subsections=10, img_dist=None
             u_ax.add_artist(ellip_vert)
             u_ax.add_artist(ellip_tilt)
 
-    plt.show()
+    if save_plot:
+        if weighted:
+            outputfile = output_dir + 'directionality_plot-weighted.png'
+        else:
+            outputfile = output_dir + 'directionality_plot-unweighted.png'
+        plt.savefig(outputfile)
+
+    if show:
+        plt.show()
+    else:
+        plt.show(block=False)
+        plt.close()
+
 
 def closeness_vitatlity(G, img_enhanced):
-    #cv_dic = nx.closeness_vitality(G, 'length')
-    #print('closeness vitatlity')
-    #print(cv_dic)
-    #cv_dic2 = nx.dispersion(G, 'length')
-    #print('dispersion')
-    #print(cv_dic2)
+    # cv_dic = nx.closeness_vitality(G, 'length')
+    # print('closeness vitatlity')
+    # print(cv_dic)
+    # cv_dic2 = nx.dispersion(G, 'length')
+    # print('dispersion')
+    # print(cv_dic2)
     print('shortest path')
     print(nx.average_shortest_path_length(G, 'length'))
 

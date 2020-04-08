@@ -1,6 +1,9 @@
 import ntpath
+import os
+import pickle
 
-from mvnTools.Pipelines import std_2d_segment, std_3d_segment
+from mvnTools.Network2d import Network2d
+from mvnTools.Pipelines import std_2d_segment, std_3d_segment, network_2d_analysis
 
 
 class IO:
@@ -18,8 +21,11 @@ class IO:
         'SEGMENT_3D': False,
         'MESH_3D': False,
         'SKEL_3D': False,
-        'NETWORK_2D': False,
-        'NETOWRK_3D': False,
+        'VOLUME_ANALYSIS': False,
+        'NETWORK_2D_GEN': False,
+        'NETWORK_2D_COMPARE': False,
+        'NETWORK_3D_GEN': False,
+        'NETWORK_3D_COMPARE=': False,
 
         # Save Parameters
         'OUTPUT_DIR': None,
@@ -56,6 +62,9 @@ class IO:
 
         'PLOT_3D_MESHES': True,
         'PLOT_3D_SKELS': True,
+
+        'PLOT_NETWORK_GEN': True,
+        'PLOT_NETWORK_DATA': False,
 
         # 2D Analysis
         'CONTRAST_METHOD': 'rescale',
@@ -121,6 +130,8 @@ class IO:
         'SKEL_CLOSING': True,
 
         # Graph Analysis
+        'CONNECTED_NETWORK': True,
+        'MIN_NODE_COUNT': 3,
         'NEAR_NODE_TOL': 5,
         'LENGTH_TOL': 1,
     }
@@ -138,8 +149,11 @@ class IO:
         'SEGMENT_3D=': bool,
         'MESH_3D=': bool,
         'SKEL_3D=': bool,
-        'NETWORK_2D=': bool,
-        'NETOWRK_3D=': bool,
+        'VOLUME_ANALYSIS=': bool,
+        'NETWORK_2D_GEN=': bool,
+        'NETWORK_2D_COMPARE=': bool,
+        'NETWORK_3D_GEN=': bool,
+        'NETWORK_3D_COMPARE=': bool,
 
         # Save Parameters
         'OUTPUT_DIR=': str,
@@ -176,6 +190,9 @@ class IO:
 
         'PLOT_3D_MESHES=': bool,
         'PLOT_3D_SKELS=': bool,
+
+        'PLOT_NETWORK_GEN=': bool,
+        'PLOT_NETWORK_DATA=': bool,
 
         # 2D Analysis
         'CONTRAST_METHOD=': str,
@@ -242,6 +259,8 @@ class IO:
         'SKEL_CLOSING=': bool,
 
         # Graph Analysis
+        'CONNECTED_NETWORK=': bool,
+        'MIN_NODE_COUNT=': int,
         'NEAR_NODE_TOL=': int,
         'LENGTH_TOL=': int
     }
@@ -266,7 +285,6 @@ class IO:
 
                 self.input_dic[param[:-1]] = val
 
-        f.close()
         self.name = ntpath.basename(self.input_dic['TIF_FILE']).split('.')[0]
         if silent_mode:
             self.input_dic['PLOT_ALL_2D'] = False
@@ -275,6 +293,8 @@ class IO:
             self.input_dic['PLOT_LUMEN_FILL'] = False
             self.input_dic['PLOT_3D_MESHES'] = False
             self.input_dic['PLOT_3D_SKELS'] = False
+            self.input_dic['PLOT_NETWORK_GEN'] = False
+            self.input_dic['PLOT_NETWORK_DATA'] = False
 
         if all_plots_mode:
             self.input_dic['PLOT_ALL_2D'] = True
@@ -283,6 +303,8 @@ class IO:
             self.input_dic['PLOT_LUMEN_FILL'] = True
             self.input_dic['PLOT_3D_MESHES'] = True
             self.input_dic['PLOT_3D_SKELS'] = True
+            self.input_dic['PLOT_NETWORK_GEN'] = True
+            self.input_dic['PLOT_NETWORK_DATA'] = True
 
         if echo_inputs:
             for ins in self.input_dic:
@@ -315,9 +337,65 @@ class IO:
                            connected_mesh=self.input_dic['CONNECTED_25D_MESH'],
                            connected_vol=self.input_dic['CONNECTED_25D_VOLUME'],
                            plot_25d=self.input_dic['PLOT_25D_MESH'],
-                           save_volume_mask=self.input_dic['SAVE_25D_MASK'],
+                           save_volume_mask=self.input_dic['SAVE_25D_MASK'] or self.input_dic['VOLUME_ANALYSIS'],
                            save_surface_meshes=self.input_dic['SAVE_25D_MESH'],
                            generate_volume_meshes=self.input_dic['GENERATE_25D_VOLUME'])
+
+        if self.input_dic['NETWORK_2D_GEN']:
+            img_enhanced, img_mask, img_skel, img_dist, img_original = \
+                std_2d_segment(self.input_dic['TIF_FILE'],
+                               scale_xy=(self.input_dic['SCALE_X'], self.input_dic['SCALE_Y']),
+                               contrast_method=self.input_dic['CONTRAST_METHOD'],
+                               thresh_method=self.input_dic['THRESH_METHOD'],
+                               rwalk_thresh=(self.input_dic['RWALK_THRESH_LOW'], self.input_dic['RWALK_THRESH_HIGH']),
+                               bth_k=self.input_dic['BTH_K_2D'],
+                               wth_k=self.input_dic['WTH_K_2D'],
+                               dila_gauss=self.input_dic['DILA_GAUSS'],
+                               open_first=self.input_dic['OPEN_FIRST'],
+                               open_k=self.input_dic['OPEN_K_2D'],
+                               close_k=self.input_dic['CLOSE_K_2D'],
+                               connected2D=self.input_dic['CONNECTED_NETWORK'],
+                               smooth=self.input_dic['SMOOTH'],
+                               all_plots=False,
+                               review_plot=False,
+                               output_dir=self.input_dic['OUTPUT_DIR'],
+                               name=self.name,
+                               save_mask=False,
+                               save_skel=False,
+                               save_dist=False,
+                               save_disp=False,
+                               save_review=False,
+                               generate_mesh_25=False,
+                               connected_mesh=False,
+                               connected_vol=False,
+                               plot_25d=False,
+                               save_volume_mask=False,
+                               save_surface_meshes=False,
+                               generate_volume_meshes=False)
+
+            network_object = Network2d(img_skel,
+                                       img_dist,
+                                       near_node_tol=self.input_dic['NEAR_NODE_TOL'],
+                                       length_tol=self.input_dic['LENGTH_TOL'],
+                                       min_nodes=self.input_dic['MIN_NODE_COUNT'],
+                                       plot=self.input_dic['PLOT_NETWORK_GEN'],
+                                       img_enhanced=img_enhanced,
+                                       output_dir=self.input_dic['OUTPUT_DIR'],
+                                       name=self.name,
+                                       save_files=self.input_dic['SAVE_2D_NETWORK'])
+
+            if self.input_dic['SAVE_2D_NETWORK']:
+                if not os.path.isdir(self.input_dic['OUTPUT_DIR'] + 'networks/'):
+                    os.mkdir(self.input_dic['OUTPUT_DIR'] + 'networks/')
+                if not os.path.isdir(self.input_dic['OUTPUT_DIR'] + 'networks/' + self.name + '/'):
+                    os.mkdir(self.input_dic['OUTPUT_DIR'] + 'networks/' + self.name + '/')
+                save_path = self.input_dic['OUTPUT_DIR'] + 'networks/' + self.name + '/'
+
+                save_obj = save_path + 'network_object.gpickle'
+                with open(save_obj, 'wb') as network:
+                    pickle.dump(network_object, network)
+
+            network_2d_analysis(network_object)
 
         if self.input_dic['SEGMENT_3D'] or self.input_dic['MESH_3D'] or self.input_dic['SKEL_3D']:
             img_enhanced, img_mask, img_skel, img_dist, img_original = \
@@ -394,7 +472,8 @@ class IO:
                            plot_3d=self.input_dic['PLOT_3D_MESHES'] and self.input_dic['MESH_3D'],
                            output_dir=self.input_dic['OUTPUT_DIR'],
                            name=self.name,
-                           save_3d_masks=self.input_dic['SAVE_3D_MASK'] and self.input_dic['SEGMENT_3D'],
+                           save_3d_masks=(self.input_dic['SAVE_3D_MASK'] or self.input_dic['VOLUME_ANALYSIS']) and
+                                         self.input_dic['SEGMENT_3D'],
                            generate_meshes=self.input_dic['MESH_3D'],
                            generate_skels=self.input_dic['SKEL_3D'],
                            plot_skels=self.input_dic['PLOT_3D_SKELS'] and self.input_dic['SKEL_3D'],
@@ -402,5 +481,6 @@ class IO:
                            save_surface_3D=self.input_dic['SAVE_3D_MESH'] and self.input_dic['MESH_3D'],
                            generate_volume_3D=self.input_dic['GENERATE_3D_VOLUME'] and self.input_dic['MESH_3D'],
                            save_surface_round=self.input_dic['SAVE_3D_MESH_ROUND'] and self.input_dic['MESH_3D'],
-                           generate_volume_round=self.input_dic['GENERATE_3D_ROUND_VOLUME'] and self.input_dic['MESH_3D']
+                           generate_volume_round=self.input_dic['GENERATE_3D_ROUND_VOLUME'] and self.input_dic[
+                               'MESH_3D']
                            )

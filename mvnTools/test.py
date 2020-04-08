@@ -1,65 +1,24 @@
 from mvnTools.Pipelines import std_2d_segment
 import networkx as nx
+import pickle
+from scipy import stats
+import numpy as np
 from mvnTools.Network2d import Network2d
 from matplotlib import pyplot as plt
 from mvnTools.Network2dTools import get_directionality_pct_pix, get_directionality_pct_mask,\
     plot_directionality, closeness_vitatlity
 
 img_enhanced, img_mask, img_skel, img_dist, img_original = \
-    std_2d_segment('/home/ryan/Desktop/mvn-analysis/data/Shared/09092019_96h_beads.tif', (1.243, 1.243),
-                   generate_mesh_25=False, review_plot=True, all_plots=False, connected2D=True)
-
-test = Network2d(img_skel, img_dist)
-get_directionality_pct_pix(test.img_dir, img_dist, weighted=False)
-get_directionality_pct_pix(test.img_dir, img_dist, weighted=True)
-get_directionality_pct_mask(img_mask)
-plot_directionality(test.img_dir, img_enhanced)
-closeness_vitatlity(test.G, img_enhanced)
-
-img_enhanced, img_mask, img_skel, img_dist, img_original = \
-    std_2d_segment('/home/ryan/Desktop/mvn-analysis/data/10x.tif', (2.4859, 2.4859),
-                   generate_mesh_25=False, review_plot=True, all_plots=False, connected2D=True)
-
-test2 = Network2d(img_skel, img_dist)
-get_directionality_pct_pix(test2.img_dir, img_dist, weighted=False)
-get_directionality_pct_pix(test2.img_dir, img_dist, weighted=True)
-get_directionality_pct_mask(img_mask)
-plot_directionality(test2.img_dir, img_enhanced)
-closeness_vitatlity(test2.G, img_enhanced)
-
-img_enhanced, img_mask, img_skel, img_dist, img_original = \
     std_2d_segment('/home/ryan/Desktop/mvn-analysis/data/original_sample.tif', (1.242, 1.242),
                    generate_mesh_25=False, review_plot=True, all_plots=False, connected2D=True)
 
-test3 = Network2d(img_skel, img_dist, near_node_tol=5)
+test = Network2d(img_skel, img_dist, img_enhanced=img_enhanced, output_dir='/home/ryan/Desktop/mvn-analysis/outputs/',
+                 save_files=True, plot=False, name='test')
+'''
+with open('test.graphclass', 'wb') as testfile:
+    pickle.dump(test, testfile)
+with open('test.graphclass', 'rb') as testfile:
+    H = pickle.load(testfile)
 
-get_directionality_pct_pix(test3.img_dir, img_dist, weighted=False)
-get_directionality_pct_pix(test3.img_dir, img_dist, weighted=True)
-get_directionality_pct_mask(img_mask)
-plot_directionality(test2.img_dir, img_enhanced)
-closeness_vitatlity(test3.G, img_enhanced)
-
-
-plt.hist([test.lengths, test2.lengths, test3.lengths], bins=20, density=True)
-plt.show()
-
-plt.hist([test.volumes, test2.volumes, test3.volumes], bins=20, density=True)
-plt.show()
-
-plt.hist([test.radii, test2.radii, test3.radii], bins=20, density=True)
-plt.show()
-
-
-plt.hist([test.contractions, test2.contractions, test3.contractions], bins=20, density=True)
-plt.title('contractions')
-plt.show()
-
-
-print(test.fractal_scores)
-print(test2.fractal_scores)
-print(test3.fractal_scores)
-plt.hist([test.fractal_scores, test2.fractal_scores, test3.fractal_scores], bins=20, density=True)
-plt.show()
-
-#print('simularity')
-#print(list(nx.algorithms.similarity.optimize_graph_edit_distance(test.G, test2.G)))
+print(H.lengths)
+'''

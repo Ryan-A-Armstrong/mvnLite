@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import numpy as np
 import pymesh
@@ -7,10 +8,11 @@ from skimage import transform, filters
 from skimage.external import tifffile as tif
 from skimage.morphology import dilation, closing
 
+from mvnTools import BinaryImageTools as bit
 from mvnTools import Display as d
 from mvnTools import Mesh as m
 from mvnTools import MeshTools2d as mt2
-from mvnTools import Network2d as nw2
+from mvnTools import Network2dTools as nw2
 from mvnTools import SegmentTools2d as st2
 from mvnTools import SegmentTools3d as st3
 from mvnTools.TifStack import TifStack as ts
@@ -79,7 +81,9 @@ def std_2d_segment(tif_file, scale_xy,
     print('\t - Smoothing mask to reduce skeleton error')
     img_mask = filters.gaussian(img_mask, sigma=(smooth * scale_xy[0] / 3.0, smooth * scale_xy[1] / 3.0),
                                 preserve_range=True)
+
     img_mask = img_mask > np.mean(img_mask)
+
     print('\t\t - Using smooth=' + str(smooth) +
           ' coresponding to a gaussian filter of sigma=' +
           str((smooth * scale_xy[0] / 3.0, smooth * scale_xy[0] / 3.0)))
@@ -139,12 +143,10 @@ def segment_2d_to_meshes(img_dist, img_skel, connected_mesh=True, connected_vol=
     img_3d = mt2.img_dist_to_img_volume(img_dist)
 
     if save_volume_mask:
-        if not os.path.isdir(output_dir + 'masks3D/'):
-            os.mkdir(output_dir + 'masks3D/')
         img_3d_save = img_3d.copy()
         if connected_vol:
             img_3d_save = st2.get_largest_connected_region(img_3d_save, plot=False, verbose=False)
-        tif.imsave(output_dir + 'masks3D/' + name + '-25d.tif', np.asarray(img_3d_save, 'uint8'), bigtiff=True)
+        bit.volume_density_data(img_3d_save, output_dir, name, True, '25d', verbose=False)
 
     if connected_mesh:
         img_3d = st2.get_largest_connected_region(img_3d, plot=False, verbose=False)
@@ -174,26 +176,29 @@ def segment_2d_to_meshes(img_dist, img_skel, connected_mesh=True, connected_vol=
         m.create_ExodusII_file(output_dir + 'volume-meshes/' + name + '-25d.msh', path_to_e='', removeMSH=False)
 
 
-def generate_2d_network(img_skel, img_dist,
-                        near_node_tol=5, length_tol=1,
-                        img_enhanced=np.zeros(0), plot=True):
-    print(' \nTransforming image data to network representation (nodes and weighted edges)')
+def network_2d_analysis(G=None, path_to_G='', mask_maybe_connected=None, mask_connected=None,
+                        output_dir='', save_outs=True,
+                        plot_outs=False):
+    if G is None and len(path_to_G) > 0:
+        with open(path_to_G, 'rb') as network_object:
+            G = pickle.load(network_object)
 
-    ends, branches = nw2.get_ends_and_branches(img_skel)
-    G, img_skel_erode = nw2.create_graph_and_nodes(ends, branches, img_skel)
-    G = nw2.fill_edges(G, ends, branches, img_dist, img_skel_erode)
+    nw2.get_directionality_pct_pix(G.img_dir, img_dist=G.img_dist, weighted=False,
+                                   outputdir=output_dir, save_vals=save_outs)
+    nw2.get_directionality_pct_pix(G.img_dir, img_dist=G.img_dist, weighted=True,
+                                   outputdir=output_dir, save_vals=save_outs)
 
-    G = nw2.combine_near_nodes_eculid(G, near_node_tol)
-    G = nw2.average_dupedge_lengths(G)
-    G = nw2.combine_near_nodes_length(G, length_tol)
-    G = nw2.remove_zero_length_edges(G)
 
-    if plot:
-        pos = nw2.get_pos_dict(G)
-        nw2.show_graph(G, with_pos=pos, with_background=img_enhanced, with_skel=dilation(img_skel))
-        nw2.show_graph(G)
+def get_full_mask_parameters(img_mask_full):
+    pass
 
-    return G
+
+def get_graph_mask_parameters(G, img_mask):
+    pass
+
+
+def create_histograms(data, xlabel, ylable, title):
+    pass
 
 
 def std_3d_segment(img_2d_stack, img_mask, scale, slice_contrast='original', pre_thresh='sauvola',
@@ -287,12 +292,10 @@ def std_3d_segment(img_2d_stack, img_mask, scale, slice_contrast='original', pre
                                           save_skel=save_skel)
 
     if save_3d_masks:
-        if not os.path.isdir(output_dir + 'masks3D/'):
-            os.mkdir(output_dir + 'masks3D/')
-        tif.imsave(output_dir + 'masks3D/' + name + '-3D.tif', np.asarray(img_3D, 'uint8'), bigtiff=True)
+        bit.volume_density_data(img_3D, output_dir, name, connected_3D, '3D', verbose=False)
         if img_round is not None:
-            tif.imsave(output_dir + 'masks3D/' + name + '-enforce-ellip-' + str(h_pct_ellip) + '.tif',
-                       np.asarray(img_round, 'uint8'), bigtiff=True)
+            bit.volume_density_data(img_round, output_dir, name, connected_3D, 'enforce-ellip-' + str(h_pct_ellip),
+                                    verbose=False)
 
     return img_3D, img_round, skel_3D, skel_round
 
