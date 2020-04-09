@@ -3,6 +3,7 @@ import os
 import pickle
 
 from mvnTools.Network2d import Network2d
+from mvnTools.Network2dTools import network_histograms
 from mvnTools.Pipelines import std_2d_segment, std_3d_segment, network_2d_analysis
 
 
@@ -395,7 +396,55 @@ class IO:
                 with open(save_obj, 'wb') as network:
                     pickle.dump(network_object, network)
 
-            network_2d_analysis(network_object)
+            network_2d_analysis(network_object, output_dir=save_path, name=self.name)
+
+        if self.input_dic['NETWORK_2D_COMPARE']:
+            graph_objs = []
+            names = []
+            if os.path.isdir(self.input_dic['OUTPUT_DIR'] + 'networks/'):
+                dirs = [x[0] for x in os.walk(self.input_dic['OUTPUT_DIR'] + 'networks/')]
+                for graphs in dirs:
+                    if os.path.isfile(graphs + '/network_object.gpickle'):
+                        with open(graphs + '/network_object.gpickle', 'rb') as graph_obj_file:
+                            G = pickle.load(graph_obj_file)
+                            graph_objs.append(G)
+                            names.append(os.path.basename(graphs))
+                            print(os.path.basename(graphs))
+
+            if not os.path.isdir(self.input_dic['OUTPUT_DIR'] + 'networks-compare/'):
+                os.mkdir(self.input_dic['OUTPUT_DIR'] + 'networks-compare/')
+
+            lengths, volumes, surfaces, radii, contractions, fractal_scores = [], [], [], [], [], []
+            print('Comparing %d networks' % len(graph_objs))
+            for g in graph_objs:
+                lengths.append(g.lengths)
+                volumes.append(g.volumes)
+                surfaces.append(g.surfaces)
+                radii.append(g.radii)
+                contractions.append(g.contractions)
+                fractal_scores.append(g.fractal_scores)
+
+            network_histograms(lengths, 'Segment length (um)', 'Frequency', 'Branch Length Distribution',
+                               names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
+                               show=self.input_dic['PLOT_NETWORK_DATA'])
+            network_histograms(surfaces, 'Segment surface area (um^2)', 'Frequency',
+                               'Surface Area Distribution',
+                               names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
+                               show=self.input_dic['PLOT_NETWORK_DATA'])
+            network_histograms(volumes, 'Segment volume (um^3)', 'Frequency', 'Branch Volume Distribution',
+                               names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
+                               show=self.input_dic['PLOT_NETWORK_DATA'])
+            network_histograms(radii, 'Segment radius (um)', 'Frequency', 'Branch radii Distribution',
+                               names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
+                               show=self.input_dic['PLOT_NETWORK_DATA'])
+            network_histograms(contractions, 'Segment contraction factor', 'Frequency',
+                               'Branch Contraction Distribution',
+                               names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
+                               show=self.input_dic['PLOT_NETWORK_DATA'])
+            network_histograms(fractal_scores, 'Segment fractal dimension', 'Frequency',
+                               'Branch Fractal Distribution',
+                               names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
+                               show=self.input_dic['PLOT_NETWORK_DATA'])
 
         if self.input_dic['SEGMENT_3D'] or self.input_dic['MESH_3D'] or self.input_dic['SKEL_3D']:
             img_enhanced, img_mask, img_skel, img_dist, img_original = \
@@ -482,5 +531,4 @@ class IO:
                            generate_volume_3D=self.input_dic['GENERATE_3D_VOLUME'] and self.input_dic['MESH_3D'],
                            save_surface_round=self.input_dic['SAVE_3D_MESH_ROUND'] and self.input_dic['MESH_3D'],
                            generate_volume_round=self.input_dic['GENERATE_3D_ROUND_VOLUME'] and self.input_dic[
-                               'MESH_3D']
-                           )
+                               'MESH_3D'])

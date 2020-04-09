@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from numba import jit, njit, prange
 from scipy import ndimage as ndi
+from scipy.ndimage.morphology import distance_transform_edt
 from skimage import morphology, transform, filters, io
 from skimage.external import tifffile as tif
 from skimage.filters import threshold_li, threshold_sauvola
@@ -71,7 +72,7 @@ def pre_process_fill_lumen(img_3d, img_mask):
 
 @njit(parallel=True)
 def get_ellipsoid_filter(r, h):
-    n = 2 * r - 1
+    n = int(2 * r - 1)
     a, b = int(n / 2), int(n / 2)
     ball_filter_blank = np.zeros((1, n, n))
     ball_filter = ball_filter_blank.copy()
@@ -359,6 +360,38 @@ def fill_circular(padded_dist_array, pad_r):
 
     return img_3d_circ > 0
 
+def enforce_circular2(img_3d_binary, h_pct=1):
+    print(' - Enforcing ellipsoid lumens with height = %.3f*radius_xy' % h_pct)
+    dist_3d = distance_transform_edt(img_3d_binary)
+    skel_3d = skeleton_3d(img_3d_binary)
+
+    dist_array = np.asarray(dist_3d)*h_pct
+    worst_case_pad = int(np.amax(dist_array) + 0.5)
+    dist_array = np.pad(dist_array, ((worst_case_pad,), (0,), (0,)))
+    skel_3d = np.pad(skel_3d, ((worst_case_pad,), (0,), (0,)))
+
+    return fill_circular2(dist_array, worst_case_pad, skel_3d)
+
+
+@njit(parallel=False)
+def fill_circular2(padded_dist_array, pad_r, skel_3d):
+    dim = padded_dist_array.shape
+    img_3d_circ = np.zeros(dim)
+
+    Z = dim[0]
+    X = dim[1]
+    Y = dim[2]
+
+    for z in prange(0, Z):
+        for x in prange(0, X):
+            for y in prange(0, Y):
+                if skel_3d[z, x, y]:
+                    r = int(padded_dist_array[z, x, y]+0.5)
+                    filler = get_ellipsoid_filter(r, r)
+                    img_3d_circ[z-r: z+r+1, x-r:x+r+1, y-r: y+r+1] += filler
+
+    return img_3d_circ > 0
+
 
 def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, close_k=1, plot_all=False, window_size=(7, 15, 15),
                                  slice_contrast=0, pre_thresh='sauvola'):
@@ -387,7 +420,7 @@ def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, close_k=1, plot
     img_out = img_out / np.amax(img_out)
     img_out = morphology.binary_opening(img_out)
     img_out = morphology.binary_closing(img_out)
-    # img_out = st2.get_largest_connected_region(img_out, plot=False, verbose=False)
+    img_out = st2.get_largest_connected_region(img_out, plot=False, verbose=False)
     if plot_all:
         tif.imsave('tmp.tiff', np.asarray(img_out, 'uint8'), bigtiff=True)
         t = tif.imread('tmp.tiff')

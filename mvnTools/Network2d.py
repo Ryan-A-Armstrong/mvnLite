@@ -34,6 +34,8 @@ class Network2d:
     total_length = 0
     total_volume = 0
     total_surface = 0
+    total_ends = 0
+    total_branch_points = 0
 
     lengths = None
     volumes = None
@@ -64,6 +66,15 @@ class Network2d:
         self.remove_self_loops()
 
         self.remove_small_subgraphs()
+
+        for n in self.G.nodes():
+            if len(self.G.edges(n)) > 1:
+                self.total_branch_points +=1
+            elif len(self.G.edges(n)) == 1:
+                self.total_ends += 1
+            else:
+                print(n, self.G.edges(n))
+
         self.get_tots_and_hist()
         self.get_pos_dict()
 

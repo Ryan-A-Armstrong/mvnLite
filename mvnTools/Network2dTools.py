@@ -48,7 +48,7 @@ def get_directionality_pct_pix(img_dir, img_dist=None, weighted=False, outputdir
     print('  Z-Score of max:\t %.4f\n' % zscore)
 
     if save_vals:
-        file = outputdir + 'calculated_values.txt'
+        file = outputdir + 'directionality.txt'
         file = open(file, 'a')
         file.write('\n2D Directionality Summary. Weighted is %r.\n\n' % weighted)
         file.write('  Percent Vertical:\t %.4f\n  Percent Horizontal:\t %.4f\n'
@@ -101,6 +101,42 @@ def plot_directionality(img_dir, img_enhanced, num_subsections=10, img_dist=None
     else:
         plt.show(block=False)
         plt.close()
+
+
+def network_summary(G, output_dir):
+    print('Connectivity')
+    print(G.is_directed())
+    print(nx.average_node_connectivity(G))
+
+    nwsum = open(output_dir + 'network_summary.txt', 'a')
+    nwsum.write('Number of branch points:\t %d\n' % G.total_branch_points)
+    nwsum.write('Number of end points:\t %d\n' % G.total_ends)
+    nwsum.write('Total length um:\t %d\n' % G.total_length)
+    nwsum.write('Total surface area um^2 (assumes circular vessels):\t %d\n' % G.total_surface)
+    nwsum.write('Total volume um^3 (assumes circular vessels):\t %d\n' % G.total_volume)
+    nwsum.write('Average branch length:\t %d\n' % np.mean(G.lengths))
+    nwsum.write('Average branch volume:\t %d\n' % np.mean(G.volumes))
+    nwsum.write('Average contraction factor:\t %d\n\n' % np.mean(G.contractions))
+    #nwsum.write('Average node connectivity: \t %f\n\n' % (nx.average_node_connectivity(G)))
+    #nwsum.write('All node connectivity: \t %r\n\n' % (nx.all_pairs_node_connectivity(G)))
+    nwsum.close()
+
+
+def network_histograms(data, xlabel, ylabel, title, legend, bins=20, save=True, ouput_dir='', show=False):
+    plt.hist(data, bins=bins, density=True)
+    plt.legend(legend)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+
+    if save:
+        plt.savefig(ouput_dir + title + '.png')
+
+    if not show:
+        plt.show(block=False)
+        plt.close()
+    else:
+        plt.show()
 
 
 def closeness_vitatlity(G, img_enhanced):

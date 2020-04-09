@@ -146,7 +146,7 @@ def segment_2d_to_meshes(img_dist, img_skel, connected_mesh=True, connected_vol=
         img_3d_save = img_3d.copy()
         if connected_vol:
             img_3d_save = st2.get_largest_connected_region(img_3d_save, plot=False, verbose=False)
-        bit.volume_density_data(img_3d_save, output_dir, name, True, '25d', verbose=False)
+        bit.volume_density_data(img_3d_save, output_dir, name, True, '25d', save_ims=True)
 
     if connected_mesh:
         img_3d = st2.get_largest_connected_region(img_3d, plot=False, verbose=False)
@@ -177,28 +177,38 @@ def segment_2d_to_meshes(img_dist, img_skel, connected_mesh=True, connected_vol=
 
 
 def network_2d_analysis(G=None, path_to_G='', mask_maybe_connected=None, mask_connected=None,
-                        output_dir='', save_outs=True,
-                        plot_outs=False):
+                        output_dir='', name='', save_outs=True, plot_outs=False):
     if G is None and len(path_to_G) > 0:
         with open(path_to_G, 'rb') as network_object:
             G = pickle.load(network_object)
 
     nw2.get_directionality_pct_pix(G.img_dir, img_dist=G.img_dist, weighted=False,
                                    outputdir=output_dir, save_vals=save_outs)
+
+    nw2.plot_directionality(G.img_dir, G.img_enhanced, num_subsections=10,
+                        img_dist=G.img_dist, weighted=False, output_dir=output_dir, show=plot_outs, save_plot=save_outs)
+
     nw2.get_directionality_pct_pix(G.img_dir, img_dist=G.img_dist, weighted=True,
                                    outputdir=output_dir, save_vals=save_outs)
 
+    nw2.plot_directionality(G.img_dir, G.img_enhanced, num_subsections=10,
+                            img_dist=G.img_dist, weighted=True, output_dir=output_dir, show=plot_outs,
+                            save_plot=save_outs)
 
-def get_full_mask_parameters(img_mask_full):
-    pass
+    nw2.network_summary(G, output_dir)
+    nw2.network_histograms([G.lengths], 'Segment length (um)', 'Frequency', 'Branch Length Distribution',
+                           [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
+    nw2.network_histograms([G.surfaces], 'Segment surface area (um^2)', 'Frequency', 'Surface Area Distribution',
+                           [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
+    nw2.network_histograms([G.volumes], 'Segment volume (um^3)', 'Frequency', 'Branch Volume Distribution',
+                           [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
+    nw2.network_histograms([G.radii], 'Segment radius (um)', 'Frequency', 'Branch radii Distribution',
+                           [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
+    nw2.network_histograms([G.contractions], 'Segment contraction factor', 'Frequency', 'Branch Contraction Distribution',
+                           [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
+    nw2.network_histograms([G.fractal_scores], 'Segment fractal dimension', 'Frequency', 'Branch Fractal Distribution',
+                           [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
 
-
-def get_graph_mask_parameters(G, img_mask):
-    pass
-
-
-def create_histograms(data, xlabel, ylable, title):
-    pass
 
 
 def std_3d_segment(img_2d_stack, img_mask, scale, slice_contrast='original', pre_thresh='sauvola',
@@ -219,6 +229,7 @@ def std_3d_segment(img_2d_stack, img_mask, scale, slice_contrast='original', pre
     print('\n============')
     print('3d analysis:')
     print('============')
+    expected_z_depth = len(img_2d_stack)*scale[2]
     slice_contrast = contrasts[slice_contrast]
     img_binary_array = st3.img_2d_stack_to_binary_array(img_2d_stack, bth_k=bth_k, wth_k=wth_k, plot_all=plot_slices,
                                                         window_size=window_size, slice_contrast=slice_contrast,
@@ -269,7 +280,12 @@ def std_3d_segment(img_2d_stack, img_mask, scale, slice_contrast='original', pre
         img_3D = st3.iterative_lumen_mesh_filling(img_3D, vert_list, max_meshing_iters)
 
     if enforce_circular or save_surface_round:
-        img_round = st3.enforce_circular(img_3D, h_pct=h_pct_ellip)
+        if h_pct_ellip > 0:
+            img_round = st3.enforce_circular(img_3D, h_pct=h_pct_ellip)
+        else:
+            img_probe = st3.enforce_circular(img_3D, h_pct=1)
+            h_pct_ellip = expected_z_depth/img_probe.shape[0]
+            img_round = st3.enforce_circular(img_3D, h_pct_ellip)
         img_round = np.pad(img_round, 1)
 
         if fill_lumen_meshing:
@@ -292,10 +308,10 @@ def std_3d_segment(img_2d_stack, img_mask, scale, slice_contrast='original', pre
                                           save_skel=save_skel)
 
     if save_3d_masks:
-        bit.volume_density_data(img_3D, output_dir, name, connected_3D, '3D', verbose=False)
+        bit.volume_density_data(img_3D, output_dir, name, connected_3D, '3D', save_ims=True)
         if img_round is not None:
-            bit.volume_density_data(img_round, output_dir, name, connected_3D, 'enforce-ellip-' + str(h_pct_ellip),
-                                    verbose=False)
+            bit.volume_density_data(img_round, output_dir, name, connected_3D, 'enforce-ellip-' + str('%0.4f'%h_pct_ellip),
+                                    save_ims=True)
 
     return img_3D, img_round, skel_3D, skel_round
 
@@ -337,7 +353,7 @@ def std_3d_mesh(img_3D=None, img_round=None, connected=True, h_pct_ellip=0,
         if save_surface_round or generate_volume_round:
             if not os.path.isdir(output_dir + 'surface-meshes/'):
                 os.mkdir(output_dir + 'surface-meshes/')
-            path = output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str(h_pct_ellip)
+            path = output_dir + 'surface-meshes/' + name + '-enforce-ellip-' +  str('%0.4f'%h_pct_ellip)
             pymesh.save_mesh(path + '.obj', mesh_round)
 
         if generate_volume_round:
@@ -345,15 +361,15 @@ def std_3d_mesh(img_3D=None, img_round=None, connected=True, h_pct_ellip=0,
                 os.mkdir(output_dir + 'volume-meshes/')
             if save_surface_round:
                 m.generate_lumen_tetmsh(
-                    output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str(h_pct_ellip) + '.obj',
-                    path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(h_pct_ellip) + '.msh',
+                    output_dir + 'surface-meshes/' + name + '-enforce-ellip-' +  str('%0.4f'%h_pct_ellip) + '.obj',
+                    path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' +  str('%0.4f'%h_pct_ellip) + '.msh',
                     removeOBJ=False)
             else:
                 m.generate_lumen_tetmsh(
-                    output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str(h_pct_ellip) + '.obj',
-                    path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(h_pct_ellip) + '.msh',
+                    output_dir + 'surface-meshes/' + name + '-enforce-ellip-' +  str('%0.4f'%h_pct_ellip) + '.obj',
+                    path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' +  str('%0.4f'%h_pct_ellip) + '.msh',
                     removeOBJ=True)
-            m.create_ExodusII_file(output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(h_pct_ellip) + '.msh')
+            m.create_ExodusII_file(output_dir + 'volume-meshes/' + '-enforce-ellip-' +  str('%0.4f'%h_pct_ellip) + '.msh')
 
 
 def std_3d_skel(img_3D=None, img_round=None, h_pct_ellip=0,
@@ -384,7 +400,7 @@ def std_3d_skel(img_3D=None, img_round=None, h_pct_ellip=0,
         if save_skel:
             if not os.path.isdir(output_dir + 'skels3d/'):
                 os.mkdir(output_dir + 'skels3d/')
-            tif.imsave(output_dir + 'skels3d/' + name + '-enforce-ellip-' + str(h_pct_ellip) + '.tif',
+            tif.imsave(output_dir + 'skels3d/' + name + '-enforce-ellip-' + str('%0.4f'%h_pct_ellip) + '.tif',
                        np.asarray(skel_round, 'uint8'), bigtiff=True)
 
     return skel_3D, skel_round
