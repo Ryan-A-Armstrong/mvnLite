@@ -6,10 +6,10 @@ Required Fields
 
 # Input image and scale values (um / pixel)
 
-TIF_FILE=/home/ryan/Desktop/mvn-analysis/data/original_sample.tif
-SCALE_X=1.2420
-SCALE_Y=1.2420
-SCALE_Z=1.1400
+TIF_FILE=/home/ryan/Desktop/mvn-analysis/data/Shared/12122019_50_percent_serum_depleted_media_2.tif
+SCALE_X=2.4859
+SCALE_Y=2.4859
+SCALE_Z=6.15
 
 #### Piplelines to Run ####
 SEGMENT_2D=1
