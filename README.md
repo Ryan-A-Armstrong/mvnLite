@@ -28,7 +28,7 @@ optional arguments:
                         1 to print the inputs being used
 
 ```
-## Input Template .txt
+## Input file used to generate example
 ```
 # MVN Image Analysis Input File Sample
 
