@@ -140,14 +140,16 @@ NetworkX graph representation of the 2D segmentation.
 
 ```
 09092019_gel_region_10x Output Example
-98	Number of branch points
-31	Number of end points
-9256.2550	Total length um
+98	      Number of branch points
+31	      Number of end points
+
+9256.2550	    Total length um
 1086720.9267	Total surface area um^2 (assumes circular vessels)
 14924270.7128	Total volume um^3 (assumes circular vessels)
-56.0985	Average branch length
+
+56.0985	    Average branch length
 90450.1255	Average branch volume
-0.9118	Average contraction factor
+0.9118	    Average contraction factor
 
 1.6588	Average node connectivity
 ```
