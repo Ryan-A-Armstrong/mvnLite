@@ -35,6 +35,8 @@ class Network2d:
     total_ends = 0
     total_branch_points = 0
 
+    connectivity = None
+
     lengths = None
     volumes = None
     surfaces = None
@@ -47,6 +49,8 @@ class Network2d:
 
     def __init__(self, img_skel, img_dist, units=1, near_node_tol=5, length_tol=1, min_nodes=3,
                  plot=False, img_enhanced=np.zeros(0), output_dir='', name='', save_files=True):
+
+        self.units = units
         self.img_skel = img_skel
         self.img_dist = img_dist
         self.near_node_tol = near_node_tol
@@ -74,6 +78,13 @@ class Network2d:
                 print(n, self.G.edges(n))
 
         self.get_tots_and_hist()
+
+        self.connectivity = []
+        all_connectivity = nx.all_pairs_node_connectivity(self.G)
+        for n1 in all_connectivity:
+            for n2 in all_connectivity[n1]:
+                self.connectivity.append(all_connectivity[n1][n2])
+
         self.get_pos_dict()
 
         save_path = ''
@@ -263,7 +274,7 @@ class Network2d:
         self.G = nx.relabel_nodes(self.G, {n1: avg_loc}, copy=False)
 
     def combine_near_nodes_eculid(self):
-        print('\t - Combining nodes which are within %d microns of each other (spacial)' % self.near_node_tol)
+        print('\t - Combining nodes which are within %d microns of each other (spatial)' % self.near_node_tol)
         num_collapse = 1
         while num_collapse > 0:
             num_collapse = 0

@@ -114,8 +114,7 @@ def network_summary(G, output_dir):
     nwsum.write('%.4f\tAverage branch length\n' % np.mean(G.lengths))
     nwsum.write('%.4f\tAverage branch volume\n' % np.mean(G.volumes))
     nwsum.write('%.4f\tAverage contraction factor\n\n' % np.mean(G.contractions))
-    nwsum.write('%.4f\tAverage node connectivity\n\n' % (nx.average_node_connectivity(G.G)))
-    nwsum.write('All node connectivity:\n %r\n\n' % (nx.all_pairs_node_connectivity(G.G)))
+    nwsum.write('%.4f\tAverage node connectivity\n\n' % np.mean(G.connectivity))
     nwsum.close()
 
 

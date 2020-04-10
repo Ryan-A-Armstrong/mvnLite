@@ -234,6 +234,11 @@ def network_2d_analysis(G=None, path_to_G='',
                            'Segment fractal dimension $\left(\\frac{ln(length)}{ln(displacement)}\\right)$', 'Frequency',
                            'Branch Fractal Distribution',
                            [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
+    nw2.network_histograms([G.connectivity],
+                           'Connectivity',
+                           'Frequency',
+                           'Node Connectivity Distribution',
+                           [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
 
 
 def std_3d_segment(img_2d_stack, img_mask, scale, units=1, slice_contrast='original', pre_thresh='sauvola',
