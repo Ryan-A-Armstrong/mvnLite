@@ -53,6 +53,10 @@ Lumens are segmented at each image plane and interpolated to fill the z-step of 
 
 Volumes are guaranteed to have no internal holes. Surfaces are most likely watertight, but would need an eternal “shrink wrapping” to guarantee.
 
+#### Slice of lumen filling
+![alt text](https://github.com/Ryan-A-Armstrong/mvn-analysis/blob/master/example_images/lumen-filling.png)
+
+#### 3D Surface
 ![alt text](https://github.com/Ryan-A-Armstrong/mvn-analysis/blob/master/example_images/3d-10x.png)
 
 ```
