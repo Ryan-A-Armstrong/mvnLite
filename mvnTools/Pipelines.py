@@ -25,7 +25,7 @@ class Pipelines:
         pass
 
 
-def std_2d_segment(tif_file, scale_xy,
+def std_2d_segment(tif_file, scale_xy, scale_z=1, h_pct=1,
                    contrast_method='rescale', thresh_method='entropy', rwalk_thresh=(0, 0),
                    bth_k=3, wth_k=3, dila_gauss=0.333,
                    open_first=False, open_k=0, close_k=5,
@@ -46,6 +46,9 @@ def std_2d_segment(tif_file, scale_xy,
     img_original.set_units(units)
     scale_xy = (
         img_original.downsample_factor * scale_xy[0] / units, img_original.downsample_factor * scale_xy[1] / units)
+
+    expt_z = len(img_original.get_pages())*scale_z/units
+    print('NumPages: %d' % len(img_original.get_pages()))
 
     enhance_contrasts = st2.contrasts(img_original_flat, plot=all_plots, adpt=0.04)
     img_enhanced = enhance_contrasts[contrasts[contrast_method]]
@@ -132,7 +135,7 @@ def std_2d_segment(tif_file, scale_xy,
         plt.close()
 
     if generate_mesh_25:
-        segment_2d_to_meshes(img_dist, img_skel, units=units, connected_mesh=connected_mesh,
+        segment_2d_to_meshes(img_dist, img_skel, units=units, h_pct=h_pct, expt_z=expt_z, connected_mesh=connected_mesh,
                              connected_vol=connected_vol,
                              plot_25d=plot_25d,
                              save_volume_mask=save_volume_mask,
@@ -142,13 +145,17 @@ def std_2d_segment(tif_file, scale_xy,
     return img_enhanced, img_mask, img_skel, img_dist, img_original
 
 
-def segment_2d_to_meshes(img_dist, img_skel, units=1, connected_mesh=True, connected_vol=False,
+def segment_2d_to_meshes(img_dist, img_skel, units=1, h_pct=1, expt_z=0, connected_mesh=True, connected_vol=False,
                          plot_25d=True,
                          save_volume_mask=True,
                          save_surface_meshes=True, generate_volume_meshes=False,
                          output_dir='', name=''):
     img_dist = mt2.smooth_dtransform_auto(img_dist, img_skel)
     img_dist = np.pad(img_dist, 1, 'constant', constant_values=0)
+    if h_pct < 0:
+        h_pct = (expt_z/2)/np.amax(img_dist)
+        print('\t\t - Calculated h_pct %.4f' % h_pct)
+    img_dist = img_dist*h_pct
     img_3d = mt2.img_dist_to_img_volume(img_dist)
     img_3d = np.append(img_3d, np.flip(img_3d, axis=0), axis=0)
 
@@ -158,7 +165,6 @@ def segment_2d_to_meshes(img_dist, img_skel, units=1, connected_mesh=True, conne
             img_3d_save = st2.get_largest_connected_region(img_3d_save, plot=False, verbose=False)
         bit.volume_density_data(img_3d_save, units=units, output_dir=output_dir, name=name,
                                 connected=True, source='25d', save_ims=True)
-
     if connected_mesh:
         img_3d = st2.get_largest_connected_region(img_3d, plot=False, verbose=False)
 
@@ -306,6 +312,7 @@ def std_3d_segment(img_2d_stack, img_mask, scale, units=1, slice_contrast='origi
         else:
             img_probe = st3.enforce_circular(img_3D, h_pct=1)
             h_pct_ellip = expected_z_depth / img_probe.shape[0]
+            del img_probe
             img_round = st3.enforce_circular(img_3D, h_pct_ellip)
         img_round = np.pad(img_round, 1)
 
@@ -389,7 +396,7 @@ def std_3d_mesh(img_3D=None, img_round=None, units=1, connected=True, h_pct_elli
                 m.generate_lumen_tetmsh(
                     output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
                             '-%dum-pix' % units) + '.obj',
-                    path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(
+                    path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-enforce-ellip-' + str(
                         '%0.4f' % h_pct_ellip) + ('-%dum-pix' % units) + '.msh',
                     removeOBJ=False)
             else:

@@ -49,7 +49,7 @@ def smooth_dtransform_auto(img_dist, img_skel, verbose=True):
 
 @njit(parallel=True)
 def img_dist_to_img_volume(img_dist):
-    print('\t - Projecting into z-dimension')
+    print('\t - Projecting into z-dimension.')
     dims = img_dist.shape
 
     maxr = int(np.ceil(np.amax(img_dist)))

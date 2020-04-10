@@ -84,6 +84,7 @@ class IO:
         'SMOOTH': 1.0,
 
         # 25D Analysis
+        'H_PCT_25D:': 1,
         'CONNECTED_25D_MESH': True,
         'CONNECTED_25D_VOLUME': False,
 
@@ -212,6 +213,7 @@ class IO:
         'SMOOTH=': float,
 
         # 25D Analysis
+        'H_PCT_25D=': float,
         'CONNECTED_25D_MESH=': bool,
         'CONNECTED_25D_VOLUME=': bool,
 
@@ -316,6 +318,8 @@ class IO:
         if self.input_dic['SEGMENT_2D'] or self.input_dic['MESH_25D']:
             std_2d_segment(self.input_dic['TIF_FILE'],
                            scale_xy=(self.input_dic['SCALE_X'], self.input_dic['SCALE_Y']),
+                           scale_z=self.input_dic['SCALE_Z'],
+                           h_pct=self.input_dic['H_PCT_25D'],
                            contrast_method=self.input_dic['CONTRAST_METHOD'],
                            thresh_method=self.input_dic['THRESH_METHOD'],
                            rwalk_thresh=(self.input_dic['RWALK_THRESH_LOW'], self.input_dic['RWALK_THRESH_HIGH']),
@@ -496,7 +500,7 @@ class IO:
             img_original.set_units(units)
 
             print('\n\nScale factor: %f' % scale_factor)
-            print('Units: %d um per pixel.')
+            print('Units: %d um per pixel.' % units)
 
             std_3d_segment(img_2d_stack, img_mask,
                            scale=(self.input_dic['SCALE_X'] * scale_factor,
