@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
+from scipy import stats
 
 
 def get_scaled_masks(img_dir, img_dist=None, weighted=False):
@@ -119,11 +120,25 @@ def network_summary(G, output_dir):
 
 
 def network_histograms(data, xlabel, ylabel, title, legend, bins=20, save=True, ouput_dir='', show=False):
-    plt.hist(data, bins=bins, density=True)
-    plt.legend(legend)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
+    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(8, 4), sharex=True,
+                                   sharey=True)
+    ax1.hist(data, bins=bins, density=True)
+    ax1.set_xlabel(xlabel)
+    ax1.set_ylabel(ylabel)
+    ax1.set_title(title + ': Histogram')
+    ax1.legend(legend)
+
+    for d in data:
+        xmin, xmax = min(d), max(d)
+        lnspc = np.linspace(xmin, xmax, len(d))
+        m, s = stats.norm.fit(d)
+        pdf_g = stats.norm.pdf(lnspc, m, s)
+        ax2.plot(lnspc, pdf_g)
+
+    ax2.set_xlabel(xlabel)
+    ax2.set_title(title + ': Normal Fit')
+    ax2.legend(legend)
+    plt.tight_layout()
 
     if save:
         plt.savefig(ouput_dir + title + '.png')

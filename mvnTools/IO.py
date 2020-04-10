@@ -428,24 +428,27 @@ class IO:
                 contractions.append(g.contractions)
                 fractal_scores.append(g.fractal_scores)
 
-            network_histograms(lengths, 'Segment length (um)', 'Frequency', 'Branch Length Distribution',
+            network_histograms(lengths, 'Segment length $(\mu m)$', 'Frequency', 'Branch Length Distribution',
                                names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
                                show=self.input_dic['PLOT_NETWORK_DATA'])
-            network_histograms(surfaces, 'Segment surface area (um^2)', 'Frequency',
+            network_histograms(surfaces, 'Segment surface area $(\mu m)^2$', 'Frequency',
                                'Surface Area Distribution',
                                names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
                                show=self.input_dic['PLOT_NETWORK_DATA'])
-            network_histograms(volumes, 'Segment volume (um^3)', 'Frequency', 'Branch Volume Distribution',
+            network_histograms(volumes, 'Segment volume $(\mu m)^3$', 'Frequency', 'Branch Volume Distribution',
                                names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
                                show=self.input_dic['PLOT_NETWORK_DATA'])
-            network_histograms(radii, 'Segment radius (um)', 'Frequency', 'Branch radii Distribution',
+            network_histograms(radii, 'Segment radius $(\mu m)$', 'Frequency', 'Branch radii Distribution',
                                names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
                                show=self.input_dic['PLOT_NETWORK_DATA'])
-            network_histograms(contractions, 'Segment contraction factor', 'Frequency',
+            network_histograms(contractions, 'Segment contraction factor $\left(\\frac{displacement}{length}\\right)$',
+                               'Frequency',
                                'Branch Contraction Distribution',
                                names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
                                show=self.input_dic['PLOT_NETWORK_DATA'])
-            network_histograms(fractal_scores, 'Segment fractal dimension', 'Frequency',
+            network_histograms(fractal_scores,
+                               'Segment fractal dimension $\left(\\frac{ln(length)}{ln(displacement))}\\right)$',
+                               'Frequency',
                                'Branch Fractal Distribution',
                                names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',
                                show=self.input_dic['PLOT_NETWORK_DATA'])

@@ -369,6 +369,7 @@ class Network2d:
             plt.imshow(im, cmap='gray')
             edge_color = 'w'
             font_color = 'w'
+            plt.hlines(img_new_dim[0]-20, img_new_dim[1]-100/self.units-20, img_new_dim[1]-20, linewidth=8)
         if len(with_skel) > 0:
             plt.imshow(with_skel, cmap='Blues', alpha=0.5)
 

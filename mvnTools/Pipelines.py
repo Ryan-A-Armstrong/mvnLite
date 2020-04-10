@@ -100,7 +100,7 @@ def std_2d_segment(tif_file, scale_xy,
     img_dist = st2.distance_transform(img_mask, plot=all_plots)
 
     if all_plots or review_plot:
-        d.review_2d_results(img_enhanced, img_mask, dilation(img_skel), img_dist)
+        d.review_2d_results(img_enhanced, img_mask, dilation(img_skel), img_dist, units=units)
 
     if save_mask:
         if not os.path.isdir(output_dir + 'masks2D/'):
@@ -211,18 +211,21 @@ def network_2d_analysis(G=None, path_to_G='', mask_maybe_connected=None, mask_co
                             save_plot=save_outs)
 
     nw2.network_summary(G, output_dir)
-    nw2.network_histograms([G.lengths], 'Segment length (um)', 'Frequency', 'Branch Length Distribution',
+    nw2.network_histograms([G.lengths], 'Segment length $(\mu m)$', 'Frequency', 'Branch Length Distribution',
                            [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
-    nw2.network_histograms([G.surfaces], 'Segment surface area (um^2)', 'Frequency', 'Surface Area Distribution',
+    nw2.network_histograms([G.surfaces], 'Segment surface area $(\mu m)^2$', 'Frequency', 'Surface Area Distribution',
                            [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
-    nw2.network_histograms([G.volumes], 'Segment volume (um^3)', 'Frequency', 'Branch Volume Distribution',
+    nw2.network_histograms([G.volumes], 'Segment volume $(\mu m)^3$', 'Frequency', 'Branch Volume Distribution',
                            [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
-    nw2.network_histograms([G.radii], 'Segment radius (um)', 'Frequency', 'Branch radii Distribution',
+    nw2.network_histograms([G.radii], 'Segment radius $(um)$', 'Frequency', 'Branch radii Distribution',
                            [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
-    nw2.network_histograms([G.contractions], 'Segment contraction factor', 'Frequency',
+    nw2.network_histograms([G.contractions], 'Segment contraction factor $\left(\\frac{displacement}{length}\\right)$',
+                           'Frequency',
                            'Branch Contraction Distribution',
                            [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
-    nw2.network_histograms([G.fractal_scores], 'Segment fractal dimension', 'Frequency', 'Branch Fractal Distribution',
+    nw2.network_histograms([G.fractal_scores],
+                           'Segment fractal dimension $\left(\\frac{ln(length)}{ln(displacement)}\\right)$', 'Frequency',
+                           'Branch Fractal Distribution',
                            [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
 
 
@@ -244,7 +247,6 @@ def std_3d_segment(img_2d_stack, img_mask, scale, units=1, slice_contrast='origi
     print('\n============')
     print('3d analysis:')
     print('============')
-
 
     expected_z_depth = len(img_2d_stack) * scale[2] / units
     scale = (scale[0] / units, scale[1] / units, scale[2] / units)
@@ -359,12 +361,12 @@ def std_3d_mesh(img_3D=None, img_round=None, units=1, connected=True, h_pct_elli
             if save_surface_3D:
                 m.generate_lumen_tetmsh(output_dir + 'surface-meshes/' + name + '-3d' + ('-%dum-pix' % units) + '.obj',
                                         path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d' + (
-                                                    '-%dum-pix' % units) + '.msh',
+                                                '-%dum-pix' % units) + '.msh',
                                         removeOBJ=False)
             else:
                 m.generate_lumen_tetmsh(output_dir + 'surface-meshes/' + name + '-3d' + ('-%dum-pix' % units) + '.obj',
                                         path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d' + (
-                                                    '-%dum-pix' % units) + '.msh',
+                                                '-%dum-pix' % units) + '.msh',
                                         removeOBJ=True)
             m.create_ExodusII_file(output_dir + 'volume-meshes/' + name + '-3d' + ('-%dum-pix' % units) + '.msh')
 
@@ -377,7 +379,7 @@ def std_3d_mesh(img_3D=None, img_round=None, units=1, connected=True, h_pct_elli
             if not os.path.isdir(output_dir + 'surface-meshes/'):
                 os.mkdir(output_dir + 'surface-meshes/')
             path = output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
-                        '-%dum-pix' % units)
+                    '-%dum-pix' % units)
             pymesh.save_mesh(path + '.obj', mesh_round)
 
         if generate_volume_round:
@@ -386,20 +388,20 @@ def std_3d_mesh(img_3D=None, img_round=None, units=1, connected=True, h_pct_elli
             if save_surface_round:
                 m.generate_lumen_tetmsh(
                     output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
-                                '-%dum-pix' % units) + '.obj',
+                            '-%dum-pix' % units) + '.obj',
                     path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(
                         '%0.4f' % h_pct_ellip) + ('-%dum-pix' % units) + '.msh',
                     removeOBJ=False)
             else:
                 m.generate_lumen_tetmsh(
                     output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
-                                '-%dum-pix' % units) + '.obj',
+                            '-%dum-pix' % units) + '.obj',
                     path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(
                         '%0.4f' % h_pct_ellip) + ('-%dum-pix' % units) + '.msh',
                     removeOBJ=True)
             m.create_ExodusII_file(
                 output_dir + 'volume-meshes/' + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
-                            '-%dum-pix' % units) + '.msh')
+                        '-%dum-pix' % units) + '.msh')
 
 
 def std_3d_skel(img_3D=None, img_round=None, units=1, h_pct_ellip=0,
@@ -432,7 +434,7 @@ def std_3d_skel(img_3D=None, img_round=None, units=1, h_pct_ellip=0,
             if not os.path.isdir(output_dir + 'skels3d/'):
                 os.mkdir(output_dir + 'skels3d/')
             tif.imsave(output_dir + 'skels3d/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
-                        '-%dum-pix' % units) + '.tif',
+                    '-%dum-pix' % units) + '.tif',
                        np.asarray(skel_round, 'uint8'), bigtiff=True)
 
     return skel_3D, skel_round
