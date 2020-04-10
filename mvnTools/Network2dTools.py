@@ -124,8 +124,9 @@ def network_histograms(data, xlabel, ylabel, title, legend, bins=20, save=True, 
     ax1.hist(data, bins=bins, density=True)
     ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
-    ax1.set_title(title + ': Histogram')
     ax1.legend(legend)
+    ax1.set_title(title + ': Histogram')
+
 
     for d in data:
         xmin, xmax = min(d), max(d)
@@ -136,7 +137,6 @@ def network_histograms(data, xlabel, ylabel, title, legend, bins=20, save=True, 
 
     ax2.set_xlabel(xlabel)
     ax2.set_title(title + ': Normal Fit')
-    ax2.legend(legend)
     plt.tight_layout()
 
     if save:
