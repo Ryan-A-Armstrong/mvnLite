@@ -1,0 +1,12 @@
+wildmeshing
+networkx
+matplotlib
+scikit_image
+numba
+meshio
+numpy
+mayavi
+scipy
+Pillow
+pymesh
+skimage
