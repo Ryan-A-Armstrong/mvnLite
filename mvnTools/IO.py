@@ -2,6 +2,8 @@ import ntpath
 import os
 import pickle
 
+import numpy as np
+
 from mvnTools.Network2d import Network2d
 from mvnTools.Network2dTools import network_histograms
 from mvnTools.Pipelines import std_2d_segment, std_3d_segment, network_2d_analysis
@@ -483,8 +485,16 @@ class IO:
 
             img_2d_stack = img_original.get_pages()
             scale_factor = img_original.downsample_factor
-            units = img_original.units
+
+            img_dim = img_original.flattened.shape
+            x_micron = scale_factor * self.input_dic['SCALE_X'] * img_dim[0]
+            y_micron = scale_factor * self.input_dic['SCALE_Y'] * img_dim[1]
+            units = np.ceil(max(x_micron, y_micron) / 750)
+            img_original.set_units(units)
+
             print('\n\nScale factor: %f' % scale_factor)
+            print('Units: %d um per pixel.')
+
             std_3d_segment(img_2d_stack, img_mask,
                            scale=(self.input_dic['SCALE_X'] * scale_factor,
                                   self.input_dic['SCALE_Y'] * scale_factor,

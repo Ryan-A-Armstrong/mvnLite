@@ -104,21 +104,17 @@ def plot_directionality(img_dir, img_enhanced, num_subsections=10, img_dist=None
 
 
 def network_summary(G, output_dir):
-    print('Connectivity')
-    print(G.is_directed())
-    print(nx.average_node_connectivity(G))
-
     nwsum = open(output_dir + 'network_summary.txt', 'a')
     nwsum.write('Number of branch points:\t %d\n' % G.total_branch_points)
     nwsum.write('Number of end points:\t %d\n' % G.total_ends)
-    nwsum.write('Total length um:\t %d\n' % G.total_length)
+    nwsum.write('Total length um:\t %.4f\n' % G.total_length)
     nwsum.write('Total surface area um^2 (assumes circular vessels):\t %d\n' % G.total_surface)
     nwsum.write('Total volume um^3 (assumes circular vessels):\t %d\n' % G.total_volume)
-    nwsum.write('Average branch length:\t %d\n' % np.mean(G.lengths))
-    nwsum.write('Average branch volume:\t %d\n' % np.mean(G.volumes))
-    nwsum.write('Average contraction factor:\t %d\n\n' % np.mean(G.contractions))
-    #nwsum.write('Average node connectivity: \t %f\n\n' % (nx.average_node_connectivity(G)))
-    #nwsum.write('All node connectivity: \t %r\n\n' % (nx.all_pairs_node_connectivity(G)))
+    nwsum.write('Average branch length:\t %.4f\n' % np.mean(G.lengths))
+    nwsum.write('Average branch volume:\t %.4f\n' % np.mean(G.volumes))
+    nwsum.write('Average contraction factor:\t %.4f\n\n' % np.mean(G.contractions))
+    nwsum.write('Average node connectivity: \t %.4f\n\n' % (nx.average_node_connectivity(G.G)))
+    nwsum.write('All node connectivity:\n %r\n\n' % (nx.all_pairs_node_connectivity(G.G)))
     nwsum.close()
 
 

@@ -45,7 +45,7 @@ def std_2d_segment(tif_file, scale_xy,
     units = np.ceil(max(x_micron, y_micron) / 750)
     img_original.set_units(units)
     scale_xy = (
-    img_original.downsample_factor * scale_xy[0] / units, img_original.downsample_factor * scale_xy[1] / units)
+        img_original.downsample_factor * scale_xy[0] / units, img_original.downsample_factor * scale_xy[1] / units)
 
     enhance_contrasts = st2.contrasts(img_original_flat, plot=all_plots, adpt=0.04)
     img_enhanced = enhance_contrasts[contrasts[contrast_method]]
@@ -179,12 +179,12 @@ def segment_2d_to_meshes(img_dist, img_skel, units=1, connected_mesh=True, conne
         p1 = output_dir + 'surface-meshes/' + name + '-25d' + ('-%dum-pix' % units) + '.obj'
         if os.path.isfile(p1):
             m.generate_lumen_tetmsh(p1, path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-25d' + (
-                        '-%dum-pix' % units) + '.msh',
+                    '-%dum-pix' % units) + '.msh',
                                     removeOBJ=False)
         else:
             pymesh.save_mesh(p1, mesh)
             m.generate_lumen_tetmsh(p1, path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-25d' + (
-                        '-%dum-pix' % units) + '.msh',
+                    '-%dum-pix' % units) + '.msh',
                                     removeOBJ=True)
         m.create_ExodusII_file(output_dir + 'volume-meshes/' + name + '-25d' + ('-%dum-pix' % units) + '.msh',
                                path_to_e='', removeMSH=False)
@@ -244,8 +244,10 @@ def std_3d_segment(img_2d_stack, img_mask, scale, units=1, slice_contrast='origi
     print('\n============')
     print('3d analysis:')
     print('============')
-    expected_z_depth = len(img_2d_stack) * scale[2]/units
-    scale = (scale[0]/units, scale[1]/units, scale[2]/units)
+
+
+    expected_z_depth = len(img_2d_stack) * scale[2] / units
+    scale = (scale[0] / units, scale[1] / units, scale[2] / units)
 
     slice_contrast = contrasts[slice_contrast]
     img_binary_array = st3.img_2d_stack_to_binary_array(img_2d_stack, bth_k=bth_k, wth_k=wth_k, plot_all=plot_slices,
@@ -348,21 +350,23 @@ def std_3d_mesh(img_3D=None, img_round=None, units=1, connected=True, h_pct_elli
         if save_surface_3D or generate_volume_3D:
             if not os.path.isdir(output_dir + 'surface-meshes/'):
                 os.mkdir(output_dir + 'surface-meshes/')
-            path = output_dir + 'surface-meshes/' + name + '-3d' + ('-%dum-pix'%units)
+            path = output_dir + 'surface-meshes/' + name + '-3d' + ('-%dum-pix' % units)
             pymesh.save_mesh(path + '.obj', mesh_3D)
 
         if generate_volume_3D:
             if not os.path.isdir(output_dir + 'volume-meshes/'):
                 os.mkdir(output_dir + 'volume-meshes/')
             if save_surface_3D:
-                m.generate_lumen_tetmsh(output_dir + 'surface-meshes/' + name + '-3d' + ('-%dum-pix'%units) + '.obj',
-                                        path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d'  + ('-%dum-pix'%units) + '.msh',
+                m.generate_lumen_tetmsh(output_dir + 'surface-meshes/' + name + '-3d' + ('-%dum-pix' % units) + '.obj',
+                                        path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d' + (
+                                                    '-%dum-pix' % units) + '.msh',
                                         removeOBJ=False)
             else:
-                m.generate_lumen_tetmsh(output_dir + 'surface-meshes/' + name + '-3d' + ('-%dum-pix'%units) +'.obj',
-                                        path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d' + ('-%dum-pix'%units) +'.msh',
+                m.generate_lumen_tetmsh(output_dir + 'surface-meshes/' + name + '-3d' + ('-%dum-pix' % units) + '.obj',
+                                        path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-3d' + (
+                                                    '-%dum-pix' % units) + '.msh',
                                         removeOBJ=True)
-            m.create_ExodusII_file(output_dir + 'volume-meshes/' + name + '-3d' + ('-%dum-pix'%units) +'.msh')
+            m.create_ExodusII_file(output_dir + 'volume-meshes/' + name + '-3d' + ('-%dum-pix' % units) + '.msh')
 
     if img_round is not None:
         mesh_round, vert_list = m.generate_surface(img_round, iso=0, grad='ascent', plot=plot_3d, offscreen=False,
@@ -372,7 +376,8 @@ def std_3d_mesh(img_3D=None, img_round=None, units=1, connected=True, h_pct_elli
         if save_surface_round or generate_volume_round:
             if not os.path.isdir(output_dir + 'surface-meshes/'):
                 os.mkdir(output_dir + 'surface-meshes/')
-            path = output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip)  + ('-%dum-pix'%units)
+            path = output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
+                        '-%dum-pix' % units)
             pymesh.save_mesh(path + '.obj', mesh_round)
 
         if generate_volume_round:
@@ -380,18 +385,21 @@ def std_3d_mesh(img_3D=None, img_round=None, units=1, connected=True, h_pct_elli
                 os.mkdir(output_dir + 'volume-meshes/')
             if save_surface_round:
                 m.generate_lumen_tetmsh(
-                    output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) +  ('-%dum-pix'%units) +'.obj',
+                    output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
+                                '-%dum-pix' % units) + '.obj',
                     path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(
-                        '%0.4f' % h_pct_ellip) +  ('-%dum-pix'%units) +'.msh',
+                        '%0.4f' % h_pct_ellip) + ('-%dum-pix' % units) + '.msh',
                     removeOBJ=False)
             else:
                 m.generate_lumen_tetmsh(
-                    output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) +  ('-%dum-pix'%units) +'.obj',
+                    output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
+                                '-%dum-pix' % units) + '.obj',
                     path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(
-                        '%0.4f' % h_pct_ellip)  + ('-%dum-pix'%units) + '.msh',
+                        '%0.4f' % h_pct_ellip) + ('-%dum-pix' % units) + '.msh',
                     removeOBJ=True)
             m.create_ExodusII_file(
-                output_dir + 'volume-meshes/' + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip)  + ('-%dum-pix'%units) + '.msh')
+                output_dir + 'volume-meshes/' + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
+                            '-%dum-pix' % units) + '.msh')
 
 
 def std_3d_skel(img_3D=None, img_round=None, units=1, h_pct_ellip=0,
@@ -409,7 +417,8 @@ def std_3d_skel(img_3D=None, img_round=None, units=1, h_pct_ellip=0,
         if save_skel:
             if not os.path.isdir(output_dir + 'skels3d/'):
                 os.mkdir(output_dir + 'skels3d/')
-            tif.imsave(output_dir + 'skels3d/' + name + '-3D' + ('-%dum-pix'%units) +'.tif', np.asarray(skel_3D, 'uint8'), bigtiff=True)
+            tif.imsave(output_dir + 'skels3d/' + name + '-3D' + ('-%dum-pix' % units) + '.tif',
+                       np.asarray(skel_3D, 'uint8'), bigtiff=True)
 
     if img_round is not None:
         skel_round = st3.skeleton_3d(img_round, squeeze_blobs=squeeze_blobs, remove_surfaces=remove_surfaces,
@@ -422,7 +431,8 @@ def std_3d_skel(img_3D=None, img_round=None, units=1, h_pct_ellip=0,
         if save_skel:
             if not os.path.isdir(output_dir + 'skels3d/'):
                 os.mkdir(output_dir + 'skels3d/')
-            tif.imsave(output_dir + 'skels3d/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip)  + ('-%dum-pix'%units) + '.tif',
+            tif.imsave(output_dir + 'skels3d/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
+                        '-%dum-pix' % units) + '.tif',
                        np.asarray(skel_round, 'uint8'), bigtiff=True)
 
     return skel_3D, skel_round

@@ -269,7 +269,7 @@ class Network2d:
             num_collapse = 0
             for n1 in self.G.nodes():
                 for n2 in self.G.nodes():
-                    if n1 != n2 and euclid_dist_between_nodes(n1, n2) < self.near_node_tol:
+                    if n1 != n2 and self.euclid_dist_between_nodes(n1, n2) < self.near_node_tol:
                         if n1 in self.G and n2 in self.G:
                             self.collapse_nodes(n1, n2)
                             num_collapse += 1
@@ -315,7 +315,7 @@ class Network2d:
             volume = e[2]['volume']
             surface = e[2]['surface']
             radius = e[2]['radius']
-            displacement = euclid_dist_between_nodes(n1, n2)
+            displacement = self.euclid_dist_between_nodes(n1, n2)
             contraction = displacement / length
             fractal = np.log(length) / np.log(displacement)
 
