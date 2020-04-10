@@ -29,5 +29,23 @@ optional arguments:
 
 ```
 
-## Examples and explaination of input file
-TODO
+## Examples of major outputs
+Scale bars default to 100 microns.
+### 2D Segmentations (Binary Masks, Distance Transforms, Skeletons)
+Can retain either the entire image region or the largest connected region. 
+
+### 2.5D Surface and Volume Meshes (3D Geometries from 2D Data)
+Lumens are forced to ellipsoidal cross-sections. The ellipsoid axes ratio can either be specified or can be automatically determined to fit the calculated z-depth of the image data.
+
+Volumes are guaranteed to have no internal holes. Surfaces are guaranteed to be watertight. 
+
+### 3D Surface Meshes,Volume Meshes, and Skeletonizations
+Lumens are segmented at each image plane and interpolated to fill the z-step of the confocal imaging. A combination of iterative local thresholding, ray tracing, and meshing is used to fill the lumen segmentation (the original images are only of the surface of the vessels).
+
+Volumes are guaranteed to have no internal holes. Surfaces are most likely watertight, but would need an eternal “shrink wrapping” to guarantee.
+
+### 2D Weighted Networks
+NetworkX graph representation of the 2D segmentation.
+
+### 3D Weighted Networks
+In progress
