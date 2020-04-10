@@ -119,10 +119,10 @@ def network_summary(G, output_dir):
 
 
 def network_histograms(data, xlabel, ylabel, title, legend, bins=20, save=True, ouput_dir='', show=False):
-    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(15, 15), sharex=True,
+    fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(30, 15), sharex=True,
                                    sharey=True)
     ax1.hist(data, bins=bins, density=True)
-    #ax1.set_xlabel(xlabel)
+    ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
     ax1.set_title(title + ': Histogram')
 
