@@ -374,8 +374,10 @@ class IO:
                                save_surface_meshes=False,
                                generate_volume_meshes=False)
 
+            units = img_original.units
             network_object = Network2d(img_skel,
                                        img_dist,
+                                       units=units,
                                        near_node_tol=self.input_dic['NEAR_NODE_TOL'],
                                        length_tol=self.input_dic['LENGTH_TOL'],
                                        min_nodes=self.input_dic['MIN_NODE_COUNT'],
@@ -481,11 +483,13 @@ class IO:
 
             img_2d_stack = img_original.get_pages()
             scale_factor = img_original.downsample_factor
+            units = img_original.units
             print('\n\nScale factor: %f' % scale_factor)
             std_3d_segment(img_2d_stack, img_mask,
                            scale=(self.input_dic['SCALE_X'] * scale_factor,
                                   self.input_dic['SCALE_Y'] * scale_factor,
                                   self.input_dic['SCALE_Z'] * 1),
+                           units=units,
                            slice_contrast=self.input_dic['SLICE_CONTRAST'],
                            pre_thresh=self.input_dic['PRE_THRESH'],
                            maxr=self.input_dic['MAXR'],

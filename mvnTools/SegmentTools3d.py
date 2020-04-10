@@ -30,8 +30,8 @@ def interp_slices(top, bottom, percent_bottom):
     return out
 
 
-def scale_and_fill_z(im_25d, z_scale):
-    print(' - Interpolating and scaling z-planes to 1 um / pixel.')
+def scale_and_fill_z(im_25d, z_scale, units=1):
+    print(' - Interpolating and scaling z-planes to %d um / pixel.' % units)
     off_int = z_scale - int(z_scale)
     off_int_cum = 0
 

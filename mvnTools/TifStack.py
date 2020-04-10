@@ -11,6 +11,7 @@ class TifStack:
     tif_pages = None
     flattened = None
     downsample_factor = 1
+    units = 1
 
     def __init__(self, _path_to_tif, page_list=True, flat=True):
         self.path_to_tif = _path_to_tif
@@ -22,6 +23,9 @@ class TifStack:
             self.flattened = self.set_flat()
         elif page_list:
             self.tif_pages = self.set_pages()
+
+    def set_units(self, unit):
+        self.units = unit
 
     def set_pages(self):
         im = Image.open(self.path_to_tif)

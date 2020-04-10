@@ -47,6 +47,7 @@ def smooth_dtransform_auto(img_dist, img_skel, verbose=True):
     return img_round
 
 
+@njit(parallel=True)
 def img_dist_to_img_volume(img_dist):
     print('\t - Projecting into z-dimension')
     dims = img_dist.shape
@@ -57,9 +58,7 @@ def img_dist_to_img_volume(img_dist):
 
     img_3d = np.zeros((zc, dims[0], dims[1]))
 
-    for z_slice in range(0, zc):
+    for z_slice in prange(0, zc):
         img_3d[z_slice] = (zc - np.ceil(img_dist)) <= z_slice
-
-    img_3d = np.append(img_3d, np.flip(img_3d, axis=0), axis=0)
 
     return img_3d

@@ -6,10 +6,6 @@ from matplotlib import pyplot as plt
 from skimage import transform, morphology
 
 
-def euclid_dist_between_nodes(n1, n2):
-    return np.sqrt((n1[0] - n2[0]) ** 2 + (n1[1] - n2[1]) ** 2)
-
-
 def get_dir_masks():
     direction_masks = []
     for dir_mask_index in range(1, 10):
@@ -22,6 +18,8 @@ def get_dir_masks():
 
 class Network2d:
     G = None
+    units = 1
+
     near_node_tol = 5
     length_tol = 1
     ends = None
@@ -47,7 +45,7 @@ class Network2d:
     pos = None
     img_enhanced = np.zeros(0)
 
-    def __init__(self, img_skel, img_dist, near_node_tol=5, length_tol=1, min_nodes=3,
+    def __init__(self, img_skel, img_dist, units=1, near_node_tol=5, length_tol=1, min_nodes=3,
                  plot=False, img_enhanced=np.zeros(0), output_dir='', name='', save_files=True):
         self.img_skel = img_skel
         self.img_dist = img_dist
@@ -93,6 +91,9 @@ class Network2d:
                             with_skel=morphology.dilation(self.img_skel), save=save_files,
                             save_path=save_path + 'with_background.png', show=plot)
             self.show_graph(save=save_files, save_path=save_path + 'without_background.png', show=plot)
+
+    def euclid_dist_between_nodes(self, n1, n2):
+        return self.units * np.sqrt((n1[0] - n2[0]) ** 2 + (n1[1] - n2[1]) ** 2)
 
     def get_ends_and_branches(self):
         print('\t - Identifying locations of branches and ends')
@@ -218,8 +219,8 @@ class Network2d:
         neighbors = np.where(self.img_skel_erode[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2])
         N = int(np.sum(self.img_skel_erode[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2]))
         for n in range(0, N):
-            radius = self.img_dist[loc]
-            length = np.sqrt((neighbors[0][n] - 1) ** 2 + (neighbors[1][n] - 1) ** 2)
+            radius = self.units*self.img_dist[loc]
+            length = self.units*np.sqrt((neighbors[0][n] - 1) ** 2 + (neighbors[1][n] - 1) ** 2)
             self.edge_walk((neighbors[0][n] - 1 + loc[0], neighbors[1][n] - 1 + loc[1]),
                            origin,
                            length_tot + length,
@@ -234,7 +235,7 @@ class Network2d:
                             (loc[1] + dim1, loc[0] + dim0) in self.branches):
                         self.G.add_edge(origin,
                                         (loc[1] + dim1, loc[0] + dim0),
-                                        length=length_tot + np.sqrt(dim1 ** 2 + dim0 ** 2),
+                                        length=length_tot + self.units*np.sqrt(dim1 ** 2 + dim0 ** 2),
                                         volume=volume_tot, surface=surface_tot,
                                         radius=np.sqrt(volume_tot / max(length_tot, 1) / np.pi),
                                         contraction=0, fractal=0)
