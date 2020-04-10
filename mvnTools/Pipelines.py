@@ -196,7 +196,7 @@ def segment_2d_to_meshes(img_dist, img_skel, units=1, h_pct=1, expt_z=0, connect
                                path_to_e='', removeMSH=False)
 
 
-def network_2d_analysis(G=None, path_to_G='', mask_maybe_connected=None, mask_connected=None,
+def network_2d_analysis(G=None, path_to_G='',
                         output_dir='', name='', save_outs=True, plot_outs=False):
     if G is None and len(path_to_G) > 0:
         with open(path_to_G, 'rb') as network_object:
@@ -216,7 +216,8 @@ def network_2d_analysis(G=None, path_to_G='', mask_maybe_connected=None, mask_co
                             img_dist=G.img_dist, weighted=True, output_dir=output_dir, show=plot_outs,
                             save_plot=save_outs)
 
-    nw2.network_summary(G, output_dir)
+    if save_outs:
+        nw2.network_summary(G, output_dir)
     nw2.network_histograms([G.lengths], 'Segment length $(\mu m)$', 'Frequency', 'Branch Length Distribution',
                            [name], save=save_outs, ouput_dir=output_dir, show=plot_outs)
     nw2.network_histograms([G.surfaces], 'Segment surface area $(\mu m)^2$', 'Frequency', 'Surface Area Distribution',

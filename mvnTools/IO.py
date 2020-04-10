@@ -404,7 +404,8 @@ class IO:
                 with open(save_obj, 'wb') as network:
                     pickle.dump(network_object, network)
 
-            network_2d_analysis(network_object, output_dir=save_path, name=self.name)
+            network_2d_analysis(network_object, output_dir=save_path, save_outs=self.input_dic['SAVE_2D_NETWORK'],
+                                plot_outs=self.input_dic['PLOT_NETWORK_DATA'], name=self.name)
 
         if self.input_dic['NETWORK_2D_COMPARE']:
             graph_objs = []
