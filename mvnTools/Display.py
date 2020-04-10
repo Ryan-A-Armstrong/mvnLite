@@ -62,18 +62,22 @@ def review_2d_results(original, mask, dskeleton, distance, saving=False, units=1
     ax[0].set_title('Original')
     ax[0].imshow(original, cmap='gray')
     ax[0].hlines(dim[0] - 20, dim[1] - 100 / units - 20, dim[1] - 20, linewidth=4)
+    ax[0].axis('off')
 
     ax[1].set_title('Original + Binary Mask')
     ax[1].imshow(original, cmap='gray')
     ax[1].imshow(mask, cmap='Blues', alpha=0.5)
     ax[1].hlines(dim[0] - 20, dim[1] - 100 / units - 20, dim[1] - 20, linewidth=4)
+    ax[1].axis('off')
 
     ax[2].set_title('Original + (dilated) Skeleton + Distance Transform')
     ax[2].imshow(original, cmap='gray')
     ax[2].imshow(dskeleton, cmap='Blues', alpha=0.5)
     ax[2].imshow(distance, cmap='Reds', alpha=0.5)
     ax[2].hlines(dim[0] - 20, dim[1] - 100 / units - 20, dim[1] - 20, linewidth=4)
+    ax[2].axis('off')
 
+    plt.tight_layout()
     if saving:
         return fig
 

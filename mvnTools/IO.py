@@ -392,7 +392,7 @@ class IO:
                                        output_dir=self.input_dic['OUTPUT_DIR'],
                                        name=self.name,
                                        save_files=self.input_dic['SAVE_2D_NETWORK'])
-
+            save_path = ''
             if self.input_dic['SAVE_2D_NETWORK']:
                 if not os.path.isdir(self.input_dic['OUTPUT_DIR'] + 'networks/'):
                     os.mkdir(self.input_dic['OUTPUT_DIR'] + 'networks/')
