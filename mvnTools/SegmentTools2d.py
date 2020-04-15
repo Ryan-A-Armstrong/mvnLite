@@ -85,7 +85,7 @@ def contrasts(img, plot=True, adpt=0.04):
 
 def background_dilation(image, gauss=1/3, plot=True, verbose=True):
     if verbose:
-        print('\t - Extracting vessels from background and filtering with sigma=%f' % gauss)
+        print('\t - Extracting vessels from background and filtering with sigma=%0.4f' % gauss)
     if not gauss:
         return image
 
@@ -135,9 +135,10 @@ def cross_entropy_thresh(image, plot=True, plot_entropy=False, verbose=True):
 
 def random_walk_thresh(image, low, high, plot=True, verbose=True):
     if verbose:
-        print('\t - Thresholding by random walk algorithm with low=%f and high=%f' % (low, high))
+        print('\t - Thresholding by random walk algorithm with low=%0.4f and high=%0.4f' % (low, high))
     data = image
-    # The range of the binary image spans over (-1, 1).
+    print('\t\t - Image pixel range: %0.4f, %0.4f' % (np.amin(data), np.amax(data)))
+
     # We choose the hottest and the coldest pixels as markers.
     markers = np.zeros(data.shape, dtype=np.uint)
     markers[data < low] = 1

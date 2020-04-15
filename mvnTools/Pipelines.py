@@ -96,7 +96,7 @@ def std_2d_segment(tif_file, scale_xy, scale_z=1, h_pct=1,
 
     print('\t\t - Using smooth=' + str(smooth) +
           ' coresponding to a gaussian filter of sigma=' +
-          str((smooth * scale_xy[0] / 3.0, smooth * scale_xy[0] / 3.0)))
+          str('(%0.4f, %0.4f)' % (smooth * scale_xy[0] / 3.0, smooth * scale_xy[0] / 3.0)))
 
     print(' - Producing computationally useful transforms')
     img_skel = st2.skeleton(img_mask, plot=all_plots)
