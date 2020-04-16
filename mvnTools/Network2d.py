@@ -83,7 +83,8 @@ class Network2d:
         all_connectivity = nx.all_pairs_node_connectivity(self.G)
         for n1 in all_connectivity:
             for n2 in all_connectivity[n1]:
-                self.connectivity.append(all_connectivity[n1][n2])
+                if all_connectivity[n1][n2] > 0:
+                    self.connectivity.append(all_connectivity[n1][n2])
 
         self.get_pos_dict()
 
