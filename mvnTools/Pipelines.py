@@ -409,11 +409,11 @@ def std_3d_mesh(img_3D=None, img_round=None, units=1, connected=True, h_pct_elli
                 m.generate_lumen_tetmsh(
                     output_dir + 'surface-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
                             '-%dum-pix' % units) + '.obj',
-                    path_to_volume_msh=output_dir + 'volume-meshes/' + '-enforce-ellip-' + str(
+                    path_to_volume_msh=output_dir + 'volume-meshes/' + name + '-enforce-ellip-' + str(
                         '%0.4f' % h_pct_ellip) + ('-%dum-pix' % units) + '.msh',
                     removeOBJ=True)
             m.create_ExodusII_file(
-                output_dir + 'volume-meshes/' + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
+                output_dir + 'volume-meshes/' + name + '-enforce-ellip-' + str('%0.4f' % h_pct_ellip) + (
                         '-%dum-pix' % units) + '.msh')
 
 

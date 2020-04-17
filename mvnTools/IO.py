@@ -296,6 +296,7 @@ class IO:
             self.input_dic['REVIEW_PLOT_2D'] = False
             self.input_dic['PLOT_3D_THRESH_SLICES'] = False
             self.input_dic['PLOT_LUMEN_FILL'] = False
+            self.input_dic['PLOT_25D_MESH'] = False
             self.input_dic['PLOT_3D_MESHES'] = False
             self.input_dic['PLOT_3D_SKELS'] = False
             self.input_dic['PLOT_NETWORK_GEN'] = False
@@ -303,6 +304,7 @@ class IO:
 
         if all_plots_mode:
             self.input_dic['PLOT_ALL_2D'] = True
+            self.input_dic['PLOT_25D_MESH'] = True
             self.input_dic['REVIEW_PLOT_2D'] = True
             self.input_dic['PLOT_3D_THRESH_SLICES'] = True
             self.input_dic['PLOT_LUMEN_FILL'] = True
