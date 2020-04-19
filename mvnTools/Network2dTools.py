@@ -112,13 +112,17 @@ def network_summary(G, output_dir):
     nwsum.write('%.4f\tTotal surface area um^2 (assumes circular vessels)\n' % G.total_surface)
     nwsum.write('%.4f\tTotal volume um^3 (assumes circular vessels)\n' % G.total_volume)
     nwsum.write('%.4f\tAverage branch length\n' % np.mean(G.lengths))
+    nwsum.write('%.4f\tAverage branch surface area\n' % np.mean(G.surfaces))
     nwsum.write('%.4f\tAverage branch volume\n' % np.mean(G.volumes))
+    nwsum.write('%.4f\tAverage branch radius\n' % np.mean(G.radii))
+    nwsum.write('%.4f\tAverage fractal dimension\n' % np.mean(G.fractal_scores))
     nwsum.write('%.4f\tAverage contraction factor\n\n' % np.mean(G.contractions))
     nwsum.write('%.4f\tAverage node connectivity\n\n' % np.mean(G.connectivity))
     nwsum.close()
 
 
 def network_histograms(data, xlabel, ylabel, title, legend, bins=20, save=True, ouput_dir='', show=False):
+    plt.rcParams.update({'font.size': 22})
     fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(30, 15), sharex=True,
                                    sharey=True)
     ax1.hist(data, bins=bins, density=True)

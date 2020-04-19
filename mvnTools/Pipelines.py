@@ -129,7 +129,7 @@ def std_2d_segment(tif_file, scale_xy, scale_z=1, h_pct=1,
         if not os.path.isdir(output_dir + 'review-segment2D/'):
             os.mkdir(output_dir + 'review-segment2D/')
         d.review_2d_results(img_enhanced, img_mask, dilation(img_skel), img_dist,
-                            saving=True).savefig(
+                            saving=True, units=units).savefig(
             output_dir + 'review-segment2D/' + name + ('-%dum-pix' % units) + '.png')
         plt.show(block=False)
         plt.close()
@@ -345,7 +345,7 @@ def std_3d_segment(img_2d_stack, img_mask, scale, units=1, slice_contrast='origi
         bit.volume_density_data(img_3D, units=units, output_dir=output_dir, name=name, connected=connected_3D,
                                 source='3D', save_ims=True)
         if img_round is not None:
-            bit.volume_density_data(img_3D, units=units, output_dir=output_dir, name=name, connected=connected_3D,
+            bit.volume_density_data(img_round, units=units, output_dir=output_dir, name=name, connected=connected_3D,
                                     source='enforce-ellip-' + str('%0.4f' % h_pct_ellip),
                                     save_ims=True)
 

@@ -420,7 +420,7 @@ def img_2d_stack_to_binary_array(img_2d_stack, bth_k=3, wth_k=3, close_k=1, plot
     img_out = img_out / np.amax(img_out)
     img_out = morphology.binary_opening(img_out)
     img_out = morphology.binary_closing(img_out)
-    img_out = st2.get_largest_connected_region(img_out, plot=False, verbose=False)
+    #img_out = st2.get_largest_connected_region(img_out, plot=False, verbose=False)
     if plot_all:
         tif.imsave('tmp.tiff', np.asarray(img_out, 'uint8'), bigtiff=True)
         t = tif.imread('tmp.tiff')

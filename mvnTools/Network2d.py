@@ -372,16 +372,19 @@ class Network2d:
         font_color = 'k'
         if len(with_background) > 0:
             im = with_background
+            im_old_dim = im.shape
             img_new_dim = im.shape
             if img_dim is not None:
                 img_new_dim = img_dim
             if len(with_skel) > 0:
                 img_new_dim = with_skel.shape
+
+            rescale1 = img_new_dim[1] / im_old_dim[1]
             im = transform.resize(im, img_new_dim)
             plt.imshow(im, cmap='gray')
             edge_color = 'w'
             font_color = 'w'
-            plt.hlines(img_new_dim[0]-20, img_new_dim[1]-100/self.units-20, img_new_dim[1]-20, linewidth=8)
+            plt.hlines(img_new_dim[0]-20, img_new_dim[1]-100*rescale1/self.units-20, img_new_dim[1]-20, linewidth=8)
         if len(with_skel) > 0:
             plt.imshow(with_skel, cmap='Blues', alpha=0.5)
 

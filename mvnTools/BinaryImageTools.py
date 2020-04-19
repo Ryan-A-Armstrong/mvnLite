@@ -13,7 +13,7 @@ def volume_density_data(img_binary, units=1, output_dir='', name='', connected=F
     minx, maxx = min(non_zero_dim[1]), max(non_zero_dim[1])
     miny, maxy = min(non_zero_dim[2]), max(non_zero_dim[2])
 
-    max_volume = ((maxz - minz) * (maxx - minx) * (maxy - miny)) ** units
+    max_volume = ((maxz - minz) * (maxx - minx) * (maxy - miny)) ** units**3
 
     volume = np.sum(img_binary) * units ** 3
     vascular_density = volume / max_volume
