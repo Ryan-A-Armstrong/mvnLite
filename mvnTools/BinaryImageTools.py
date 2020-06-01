@@ -13,10 +13,10 @@ def volume_density_data(img_binary, units=1, output_dir='', name='', connected=F
     minx, maxx = min(non_zero_dim[1]), max(non_zero_dim[1])
     miny, maxy = min(non_zero_dim[2]), max(non_zero_dim[2])
 
-    max_volume = ((maxz - minz) * (maxx - minx) * (maxy - miny)) ** units**3
+    max_volume = ((maxz - minz) * (maxx - minx) * (maxy - miny)) * units**3
 
     volume = np.sum(img_binary) * units ** 3
-    vascular_density = volume / max_volume
+    vascular_density = float(volume / max_volume)
 
     dist_to_vessel = distance_transform_edt(invert[minz:maxz, minx:maxx, miny:maxy]) * units
     avg_dist_to_vessel = np.sum(dist_to_vessel) / (len(np.nonzero(dist_to_vessel)[0]))
@@ -43,7 +43,9 @@ def volume_density_data(img_binary, units=1, output_dir='', name='', connected=F
     binary_data.write('\n==============================================================================\n')
     binary_data.write('Binary image generated from %s.\nConnected is %r\n\n' % (source, connected))
     binary_data.write(
-        '(%d um, %d um, %d um)\tBounding box dimensions (z, x, y)\n' % (maxz - minz, maxx - minx, maxy - miny))
+        '(%d um, %d um, %d um)\tBounding box dimensions (z, x, y)\n' % ((maxz - minz)*units,
+                                                                        (maxx - minx)*units,
+                                                                        (maxy - miny)*units))
     binary_data.write('%d um^3\tTotal volume\n' % volume)
     binary_data.write('%f\tVascular density (volume vessel/volume space)\n' % vascular_density)
     binary_data.write('%f um\tAverage distance from vessel wall\n' % avg_dist_to_vessel)

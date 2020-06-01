@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 from scipy import ndimage as ndi
 from scipy.ndimage import gaussian_filter
 from skimage import exposure, img_as_float, img_as_ubyte, filters, measure
+from skimage.filters import threshold_li
 from skimage.filters.thresholding import _cross_entropy
 from skimage.morphology import white_tophat, black_tophat, disk, reconstruction, opening, closing, dilation, skeletonize
 from skimage.segmentation import random_walker
@@ -109,28 +110,30 @@ def cross_entropy_thresh(image, plot=True, plot_entropy=False, verbose=True):
     image = np.clip(image, -1.0, 1.0)
     im = img_as_ubyte(image)
 
-    thresholds = np.arange(np.min(im) + 1.5, np.max(im) - 1.5)
-    entropies = [_cross_entropy(im, t) for t in thresholds]
+    # thresholds = np.arange(np.min(im) + 1.5, np.max(im) - 1.5)
+    # entropies = [_cross_entropy(im, t) for t in thresholds]
+    #
+    # optimal_im_threshold = thresholds[np.argmin(entropies)]
+    #
+    # if plot:
+    #     d.compare2(im, im > optimal_im_threshold, 'Cross Entropy Threshold')
+    #
+    # if plot_entropy:
+    #     plt.plot(thresholds, entropies)
+    #     plt.xlabel('thresholds')
+    #     plt.ylabel('cross-entropy')
+    #     plt.vlines(optimal_im_threshold,
+    #                ymin=np.min(entropies) - 0.05 * np.ptp(entropies),
+    #                ymax=np.max(entropies) - 0.05 * np.ptp(entropies))
+    #     plt.title('optimal threshold')
+    #     plt.show()
+    #
+    #     print('The brute force optimal threshold is:', optimal_im_threshold)
+    #     print('The computed optimal threshold is:', filters.threshold_li(im))
+    #
+    # return im > optimal_im_threshold
 
-    optimal_im_threshold = thresholds[np.argmin(entropies)]
-
-    if plot:
-        d.compare2(im, im > optimal_im_threshold, 'Cross Entropy Threshold')
-
-    if plot_entropy:
-        plt.plot(thresholds, entropies)
-        plt.xlabel('thresholds')
-        plt.ylabel('cross-entropy')
-        plt.vlines(optimal_im_threshold,
-                   ymin=np.min(entropies) - 0.05 * np.ptp(entropies),
-                   ymax=np.max(entropies) - 0.05 * np.ptp(entropies))
-        plt.title('optimal threshold')
-        plt.show()
-
-        print('The brute force optimal threshold is:', optimal_im_threshold)
-        print('The computed optimal threshold is:', filters.threshold_li(im))
-
-    return im > optimal_im_threshold
+    return im > threshold_li(im)
 
 
 def random_walk_thresh(image, low, high, plot=True, verbose=True):
