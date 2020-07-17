@@ -1,7 +1,11 @@
-scikit_image
-numpy
 scipy
-matplotlib
+scikit_image
 networkx
+mayavi
+matplotlib
+meshio
+numpy
+numba
+wildmeshing
 Pillow
-skimage
+pymesh
