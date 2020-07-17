@@ -1,12 +1,7 @@
-wildmeshing
-networkx
-matplotlib
 scikit_image
-numba
-meshio
 numpy
-mayavi
 scipy
+matplotlib
+networkx
 Pillow
-pymesh
 skimage

@@ -2,9 +2,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import ndimage as ndi
 from scipy.ndimage import gaussian_filter
-from skimage import exposure, img_as_float, img_as_ubyte, filters, measure
+from skimage import exposure, img_as_float, img_as_ubyte, measure
 from skimage.filters import threshold_li
-from skimage.filters.thresholding import _cross_entropy
 from skimage.morphology import white_tophat, black_tophat, disk, reconstruction, opening, closing, dilation, skeletonize
 from skimage.segmentation import random_walker
 
@@ -84,7 +83,7 @@ def contrasts(img, plot=True, adpt=0.04):
     return img, img_rescale, img_eq, img_adapteq
 
 
-def background_dilation(image, gauss=1/3, plot=True, verbose=True):
+def background_dilation(image, gauss=1 / 3, plot=True, verbose=True):
     if verbose:
         print('\t - Extracting vessels from background and filtering with sigma=%0.4f' % gauss)
     if not gauss:
@@ -195,7 +194,7 @@ def skeleton(img_binary, plot=True, verbose=True):
     if plot:
         d.compare2(img_binary, dilation(img_skel), 'Skeletonization (image dilated for viewing)')
 
-    img_skel = img_skel/np.amax(img_skel)
+    img_skel = img_skel / np.amax(img_skel)
 
     return img_skel
 

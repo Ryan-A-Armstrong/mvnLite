@@ -4,7 +4,7 @@ import os
 
 from mvnTools.IO import IO
 
-#Test commit
+# Test commit
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--input-file', type=str, required=False,
@@ -22,8 +22,6 @@ args = vars(parser.parse_args())
 args['silent'] = bool(args['silent'])
 args['plot_all'] = bool(args['plot_all'])
 args['echo_inputs'] = bool(args['echo_inputs'])
-
-
 
 if args['input_file'] is not None:
     IO(args['input_file'], echo_inputs=args['echo_inputs'], silent_mode=args['silent'], all_plots_mode=args['plot_all'])

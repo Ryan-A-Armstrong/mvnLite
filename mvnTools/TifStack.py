@@ -12,11 +12,13 @@ class TifStack:
     flattened = None
     downsample_factor = 1
     units = 1
+    maxdim = 512
 
-    def __init__(self, _path_to_tif, page_list=True, flat=True):
+    def __init__(self, _path_to_tif, max_dim=512, page_list=True, flat=True):
         self.path_to_tif = _path_to_tif
         name = ntpath.basename(_path_to_tif).split('.')[0]
         print('\nProcessing: ' + name)
+        self.maxdim = max_dim
 
         if flat:
             self.tif_pages = self.set_pages()
@@ -39,10 +41,11 @@ class TifStack:
                 image = np.array(im)
                 dim = image.shape
 
-                if dim[0] > 512 or dim[1] > 512:
-                    self.downsample_factor = max(dim[0], dim[1])/512
+                if dim[0] > self.maxdim or dim[1] > self.maxdim:
+                    self.downsample_factor = max(dim[0], dim[1]) / self.maxdim
                     image = transform.resize(image,
-                                             (int(dim[0]/self.downsample_factor), int(dim[1]/self.downsample_factor)))
+                                             (int(dim[0] / self.downsample_factor),
+                                              int(dim[1] / self.downsample_factor)))
 
             except EOFError:
                 break
@@ -60,7 +63,7 @@ class TifStack:
         if self.tif_pages is None:
             self.set_pages()
         flat_sum = np.sum(self.tif_pages, axis=0)
-        flat_sum = flat_sum/np.amax(flat_sum)
+        flat_sum = flat_sum / np.amax(flat_sum)
         warnings.filterwarnings('ignore')
 
         return img_as_uint(flat_sum)

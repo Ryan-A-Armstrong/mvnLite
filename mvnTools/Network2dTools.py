@@ -1,4 +1,5 @@
-import networkx as nx
+import csv
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
@@ -41,20 +42,22 @@ def get_directionality_pct_pix(img_dir, img_dist=None, weighted=False, outputdir
     right = np.sum(u_masks[2]) / tot
 
     data = np.asarray([vert, horz, left, right])
-    zscore = (np.max(data) - np.mean(data)) / np.std(data)
+    max_score = np.max(data)
 
     print('\n2D Directionality Summary. Weighted is %r.' % weighted)
-    print('  Percent Vertical:\t %.4f\n  Percent Horizontal:\t %.4f\n'
-          '  Percent L. Diagonal:\t %.4f\n  Percent R. Diagonal:\t %.4f\n' % (vert, horz, left, right))
-    print('  Z-Score of max:\t %.4f\n' % zscore)
+    print('  Percent Vertical (90 degrees):\t %.4f\n  Percent Horizontal (0 degrees):\t %.4f\n'
+          '  Percent L. Diagonal (135 degrees):\t %.4f\n  Percent R. Diagonal (45 degrees):\t %.4f\n' % (
+          vert, horz, left, right))
+    print('  Max score:\t %.4f\n' % max_score)
 
     if save_vals:
         file = outputdir + 'directionality.txt'
         file = open(file, 'a')
         file.write('\n2D Directionality Summary. Weighted is %r.\n\n' % weighted)
-        file.write('  Percent Vertical:\t %.4f\n  Percent Horizontal:\t %.4f\n'
-                   '  Percent L. Diagonal:\t %.4f\n  Percent R. Diagonal:\t %.4f\n' % (vert, horz, left, right))
-        file.write('\n  Z-Score of max:\t %.4f\n' % zscore)
+        file.write('  Percent Vertical (90 degrees):\t %.4f\n  Percent Horizontal (0 degrees):\t %.4f\n'
+                   '  Percent L. Diagonal (135 degrees):\t %.4f\n  Percent R. Diagonal (45 degrees):\t %.4f\n' % (
+                   vert, horz, left, right))
+        file.write('\n  Max score:\t %.4f\n' % max_score)
         file.close()
 
 
@@ -121,6 +124,23 @@ def network_summary(G, output_dir):
     nwsum.close()
 
 
+def network_summary_csv(G, output_dir):
+    with open(output_dir + 'network_summary.csv', mode='w') as net_file:
+        net_writer = csv.writer(net_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        net_writer.writerow(['Number of branch points', G.total_branch_points])
+        net_writer.writerow(['Number of end points', G.total_ends])
+        net_writer.writerow(['Total length um', G.total_length])
+        net_writer.writerow(['Total surface area um^2 (assumes circular vessels)', G.total_surface])
+        net_writer.writerow(['Total volume um^3 (assumes circular vessels)', G.total_volume])
+        net_writer.writerow(['Average branch length', np.mean(G.lengths)])
+        net_writer.writerow(['Average branch surface area', np.mean(G.surfaces)])
+        net_writer.writerow(['Average branch volume', np.mean(G.volumes)])
+        net_writer.writerow(['Average branch radius', np.mean(G.radii)])
+        net_writer.writerow(['Average fractal dimension', np.mean(G.fractal_scores)])
+        net_writer.writerow(['Average contraction factor', np.mean(G.contractions)])
+        net_writer.writerow(['Average node connectivity', np.mean(G.connectivity)])
+
+
 def network_histograms(data, xlabel, ylabel, title, legend, bins=20, save=True, ouput_dir='', show=False):
     plt.rcParams.update({'font.size': 22})
     fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(30, 15), sharex=True,
@@ -129,7 +149,6 @@ def network_histograms(data, xlabel, ylabel, title, legend, bins=20, save=True, 
     ax1.set_xlabel(xlabel)
     ax1.set_ylabel(ylabel)
     ax1.set_title(title + ': Histogram')
-
 
     for d in data:
         xmin, xmax = min(d), max(d)
@@ -151,59 +170,3 @@ def network_histograms(data, xlabel, ylabel, title, legend, bins=20, save=True, 
         plt.close()
     else:
         plt.show()
-
-
-def closeness_vitatlity(G, img_enhanced):
-    # cv_dic = nx.closeness_vitality(G, 'length')
-    # print('closeness vitatlity')
-    # print(cv_dic)
-    # cv_dic2 = nx.dispersion(G, 'length')
-    # print('dispersion')
-    # print(cv_dic2)
-    print('shortest path')
-    print(nx.average_shortest_path_length(G, 'length'))
-
-    '''
-    lc_dic = nx.load_centrality(G)
-
-    xs = []
-    ys = []
-    vals = []
-    value_mask = np.zeros(img_enhanced.shape)
-    for node in lc_dic:
-        x = int(node[0])
-        y = int(node[1])
-        val = lc_dic[node]
-        value_mask[y-10: y+11,x-10:x+11] = val
-        xs.append(xs)
-        ys.append(ys)
-        vals.append(val)
-
-    minval = min(vals)
-    maxval = max(vals)
-
-    plt.imshow(img_enhanced, alpha=0.5, cmap='gray')
-    plt.imshow(value_mask, alpha=0.8, cmap='afmhot', vmin=minval, vmax=maxval)
-    plt.show()
-
-    xs = []
-    ys = []
-    vals = []
-    value_mask = np.zeros(img_enhanced.shape)
-    for node in cv_dic:
-        x = int(node[0])
-        y = int(node[1])
-        val = cv_dic[node]
-        if val > 0:
-            value_mask[y - 10: y + 11, x - 10:x + 11] = val
-            xs.append(xs)
-            ys.append(ys)
-            vals.append(val)
-
-    minval = min(vals)
-    maxval = max(vals)
-
-    plt.imshow(img_enhanced, alpha=0.5, cmap='gray')
-    plt.imshow(value_mask, alpha=0.8, cmap='afmhot', vmin=minval, vmax=maxval)
-    plt.show()
-    '''

@@ -1,6 +1,9 @@
+import csv
 import ntpath
 import os
 import pickle
+
+import numpy as np
 
 from mvnTools.Network2d import Network2d
 from mvnTools.Network2dTools import network_histograms
@@ -14,11 +17,15 @@ class IO:
         'TIF_FILE': None,
         'SCALE_X': None,
         'SCALE_Y': None,
+        'SCALE_Z': None,
 
         # Piplelines to Run
         'SEGMENT_2D': False,
         'NETWORK_2D_GEN': False,
         'NETWORK_2D_COMPARE': False,
+
+        'MESH_25D=': False,
+        'VOLUME_ANALYSIS=': False,
 
         # Save Parameters
         'OUTPUT_DIR': None,
@@ -31,12 +38,18 @@ class IO:
 
         'SAVE_2D_NETWORK': True,
 
+        'SAVE_25D_MESH=': False,
+        'SAVE_25D_MASK=': False,
+        'GENERATE_25D_VOLUME=': False,
+
         # Display Parameters
         'PLOT_ALL_2D': False,
         'REVIEW_PLOT_2D': False,
 
         'PLOT_NETWORK_GEN': True,
         'PLOT_NETWORK_DATA': False,
+
+        'PLOT_25D_MESH=': False,
 
         # 2D Analysis
         'CONTRAST_METHOD': 'rescale',
@@ -57,6 +70,15 @@ class IO:
         'MIN_NODE_COUNT': 3,
         'NEAR_NODE_TOL': 5,
         'LENGTH_TOL': 1,
+
+        # 25D Analysis
+        'H_PCT_25D=': -1,
+        'CONNECTED_25D_MESH=': 1,
+        'CONNECTED_25D_VOLUME=': 0,
+
+        # Memory Restriction
+        'MAX_PIXEL': 512,
+        'MAX_MICRON': 750
     }
 
     input_dic_setter = {
@@ -64,12 +86,15 @@ class IO:
         'TIF_FILE=': str,
         'SCALE_X=': float,
         'SCALE_Y=': float,
+        'SCALE_Z=': float,
 
         # Piplelines to Run
         'SEGMENT_2D=': bool,
-        'MESH_25D=': bool,
         'NETWORK_2D_GEN=': bool,
         'NETWORK_2D_COMPARE=': bool,
+
+        'MESH_25D=': bool,
+        'VOLUME_ANALYSIS=': bool,
 
         # Save Parameters
         'OUTPUT_DIR=': str,
@@ -82,12 +107,18 @@ class IO:
 
         'SAVE_2D_NETWORK=': bool,
 
+        'SAVE_25D_MESH=': bool,
+        'SAVE_25D_MASK=': bool,
+        'GENERATE_25D_VOLUME=': bool,
+
         # Display Parameters
         'PLOT_ALL_2D=': bool,
         'REVIEW_PLOT_2D=': bool,
 
         'PLOT_NETWORK_GEN=': bool,
         'PLOT_NETWORK_DATA=': bool,
+
+        'PLOT_25D_MESH=': bool,
 
         # 2D Analysis
         'CONTRAST_METHOD=': str,
@@ -107,7 +138,16 @@ class IO:
         'CONNECTED_NETWORK=': bool,
         'MIN_NODE_COUNT=': int,
         'NEAR_NODE_TOL=': int,
-        'LENGTH_TOL=': int
+        'LENGTH_TOL=': int,
+
+        # 25D Analysis
+        'H_PCT_25D=': float,
+        'CONNECTED_25D_MESH=': bool,
+        'CONNECTED_25D_VOLUME=': bool,
+
+        # Memory Restriction
+        'MAX_PIXEL=': int,
+        'MAX_MICRON=': int
     }
 
     def __init__(self, input_file, echo_inputs=False, silent_mode=False, all_plots_mode=False):
@@ -152,7 +192,8 @@ class IO:
         if self.input_dic['SEGMENT_2D'] or self.input_dic['MESH_25D']:
             std_2d_segment(self.input_dic['TIF_FILE'],
                            scale_xy=(self.input_dic['SCALE_X'], self.input_dic['SCALE_Y']),
-                           scale_z=self.input_dic['SCALE_Z'],
+                           max_dim=self.input_dic['MAX_PIXEL'],
+                           max_micron=self.input_dic['MAX_MICRON'],
                            contrast_method=self.input_dic['CONTRAST_METHOD'],
                            thresh_method=self.input_dic['THRESH_METHOD'],
                            rwalk_thresh=(self.input_dic['RWALK_THRESH_LOW'], self.input_dic['RWALK_THRESH_HIGH']),
@@ -172,7 +213,14 @@ class IO:
                            save_skel=self.input_dic['SAVE_2D_SKEL'] and self.input_dic['SEGMENT_2D'],
                            save_dist=self.input_dic['SAVE_2D_DIST'] and self.input_dic['SEGMENT_2D'],
                            save_disp=self.input_dic['SAVE_2D_DISPLAY'] and self.input_dic['SEGMENT_2D'],
-                           save_review=self.input_dic['SAVE_2D_REVIEW'] and self.input_dic['SEGMENT_2D']
+                           save_review=self.input_dic['SAVE_2D_REVIEW'] and self.input_dic['SEGMENT_2D'],
+                           generate_mesh_25=self.input_dic['MESH_25D'],
+                           connected_mesh=self.input_dic['CONNECTED_25D_MESH'],
+                           connected_vol=self.input_dic['CONNECTED_25D_VOLUME'],
+                           plot_25d=self.input_dic['PLOT_25D_MESH'],
+                           save_volume_mask=self.input_dic['SAVE_25D_MASK'] or self.input_dic['VOLUME_ANALYSIS'],
+                           save_surface_meshes=self.input_dic['SAVE_25D_MESH'],
+                           generate_volume_meshes=self.input_dic['GENERATE_25D_VOLUME']
                            )
 
         if self.input_dic['NETWORK_2D_GEN']:
@@ -198,7 +246,14 @@ class IO:
                                save_skel=False,
                                save_dist=False,
                                save_disp=False,
-                               save_review=False
+                               save_review=False,
+                               generate_mesh_25=False,
+                               connected_mesh=False,
+                               connected_vol=False,
+                               plot_25d=False,
+                               save_volume_mask=False,
+                               save_surface_meshes=False,
+                               generate_volume_meshes=False
                                )
 
             units = img_original.units
@@ -246,6 +301,23 @@ class IO:
 
             lengths, volumes, surfaces, radii, contractions, fractal_scores, connect = [], [], [], [], [], [], []
             print('Comparing %d networks' % len(graph_objs))
+
+            with open(self.input_dic['OUTPUT_DIR'] + 'networks-compare/network_summaries.csv', mode='w') as net_file:
+                net_writer = csv.writer(net_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                net_writer.writerow(['Name',
+                                     'Number of branch points',
+                                     'Number of end points',
+                                     'Total length um',
+                                     'Total surface area um^2 (assumes circular vessels)',
+                                     'Total volume um^3 (assumes circular vessels)',
+                                     'Average branch length',
+                                     'Average branch surface area',
+                                     'Average branch volume',
+                                     'Average branch radius',
+                                     'Average fractal dimension',
+                                     'Average contraction factor',
+                                     'Average node connectivity'])
+            name_i = 0
             for g in graph_objs:
                 lengths.append(g.lengths)
                 volumes.append(g.volumes)
@@ -254,6 +326,24 @@ class IO:
                 contractions.append(g.contractions)
                 fractal_scores.append(g.fractal_scores)
                 connect.append(g.connectivity)
+
+                with open(self.input_dic['OUTPUT_DIR'] + 'networks-compare/network_summaries.csv',
+                          mode='a') as net_file:
+                    net_writer = csv.writer(net_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                    net_writer.writerow([names[name_i],
+                                         g.total_branch_points,
+                                         g.total_ends,
+                                         g.total_length,
+                                         g.total_surface,
+                                         g.total_volume,
+                                         np.mean(g.lengths),
+                                         np.mean(g.surfaces),
+                                         np.mean(g.volumes),
+                                         np.mean(g.radii),
+                                         np.mean(g.fractal_scores),
+                                         np.mean(g.contractions),
+                                         np.mean(g.connectivity)])
+                name_i += 1
 
             network_histograms(lengths, 'Segment length $(\mu m)$', 'Frequency', 'Branch Length Distribution',
                                names, save=True, ouput_dir=self.input_dic['OUTPUT_DIR'] + 'networks-compare/',

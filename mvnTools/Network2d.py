@@ -71,7 +71,7 @@ class Network2d:
 
         for n in self.G.nodes():
             if len(self.G.edges(n)) > 1:
-                self.total_branch_points +=1
+                self.total_branch_points += 1
             elif len(self.G.edges(n)) == 1:
                 self.total_ends += 1
             else:
@@ -231,8 +231,8 @@ class Network2d:
         neighbors = np.where(self.img_skel_erode[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2])
         N = int(np.sum(self.img_skel_erode[loc[0] - 1:loc[0] + 2, loc[1] - 1:loc[1] + 2]))
         for n in range(0, N):
-            radius = self.units*self.img_dist[loc]
-            length = self.units*np.sqrt((neighbors[0][n] - 1) ** 2 + (neighbors[1][n] - 1) ** 2)
+            radius = self.units * self.img_dist[loc]
+            length = self.units * np.sqrt((neighbors[0][n] - 1) ** 2 + (neighbors[1][n] - 1) ** 2)
             self.edge_walk((neighbors[0][n] - 1 + loc[0], neighbors[1][n] - 1 + loc[1]),
                            origin,
                            length_tot + length,
@@ -247,7 +247,7 @@ class Network2d:
                             (loc[1] + dim1, loc[0] + dim0) in self.branches):
                         self.G.add_edge(origin,
                                         (loc[1] + dim1, loc[0] + dim0),
-                                        length=length_tot + self.units*np.sqrt(dim1 ** 2 + dim0 ** 2),
+                                        length=length_tot + self.units * np.sqrt(dim1 ** 2 + dim0 ** 2),
                                         volume=volume_tot, surface=surface_tot,
                                         radius=np.sqrt(volume_tot / max(length_tot, 1) / np.pi),
                                         contraction=0, fractal=0)
@@ -384,7 +384,8 @@ class Network2d:
             plt.imshow(im, cmap='gray')
             edge_color = 'w'
             font_color = 'w'
-            plt.hlines(img_new_dim[0]-20, img_new_dim[1]-100*rescale1/self.units-20, img_new_dim[1]-20, linewidth=8)
+            plt.hlines(img_new_dim[0] - 20, img_new_dim[1] - 100 * rescale1 / self.units - 20, img_new_dim[1] - 20,
+                       linewidth=8)
         if len(with_skel) > 0:
             plt.imshow(with_skel, cmap='Blues', alpha=0.5)
 
