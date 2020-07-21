@@ -6,6 +6,5 @@ matplotlib
 meshio
 numpy
 numba
-wildmeshing
 Pillow
 pymesh
