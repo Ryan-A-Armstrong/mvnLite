@@ -1,10 +1,7 @@
+networkx
 scipy
 scikit_image
-networkx
-mayavi
 matplotlib
-meshio
 numpy
-numba
 Pillow
-pymesh
+

@@ -1,3 +1,4 @@
+'''
 import os
 
 import numpy as np
@@ -71,3 +72,4 @@ def volume_density_data(img_binary, units=1, output_dir='', name='', connected=F
             tif.imsave(
                 output_dir + 'masks3D/' + name + '/' + source + '-unconnected-dist-' + ('-%dum-pix' % units) + '.tif',
                 np.asarray(dist_to_vessel, 'uint8'), bigtiff=True)
+'''

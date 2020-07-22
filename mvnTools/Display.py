@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt
-from mayavi import mlab
+# from mayavi import mlab
 from skimage import exposure
 
 '''
@@ -81,7 +81,7 @@ def review_2d_results(original, mask, dskeleton, distance, saving=False, units=1
 
     plt.show()
 
-
+'''
 def visualize_dist(dist, offscreen=False):
     mlab.options.offscreen = offscreen
     mlab.surf(dist)
@@ -98,3 +98,4 @@ def visualize_mesh(mesh_data, offscreen=False, title=''):
                          [vert[1] for vert in verts],
                          [vert[2] for vert in verts], faces)
     mlab.show()
+'''

@@ -1,3 +1,4 @@
+'''
 import numpy as np
 from numba import njit, prange
 
@@ -62,3 +63,4 @@ def img_dist_to_img_volume(img_dist):
         img_3d[z_slice] = (zc - np.ceil(img_dist)) <= z_slice
 
     return img_3d
+'''
