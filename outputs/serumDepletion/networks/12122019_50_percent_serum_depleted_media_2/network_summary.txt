@@ -1,0 +1,14 @@
+73	Number of branch points
+26	Number of end points
+16273.7440	Total length um
+4058514.4060	Total surface area um^2 (assumes circular vessels)
+100868274.1738	Total volume um^3 (assumes circular vessels)
+133.3913	Average branch length
+33266.5115	Average branch surface area
+826789.1326	Average branch volume
+45.0645	Average branch radius
+1.0236	Average fractal dimension
+0.9000	Average contraction factor
+
+1.5417	Average node connectivity
+

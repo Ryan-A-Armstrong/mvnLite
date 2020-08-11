@@ -17,15 +17,11 @@ class IO:
         'TIF_FILE': None,
         'SCALE_X': None,
         'SCALE_Y': None,
-        'SCALE_Z': None,
 
         # Piplelines to Run
         'SEGMENT_2D': False,
         'NETWORK_2D_GEN': False,
         'NETWORK_2D_COMPARE': False,
-
-        'MESH_25D=': False,
-        'VOLUME_ANALYSIS=': False,
 
         # Save Parameters
         'OUTPUT_DIR': None,
@@ -38,18 +34,12 @@ class IO:
 
         'SAVE_2D_NETWORK': True,
 
-        'SAVE_25D_MESH=': False,
-        'SAVE_25D_MASK=': False,
-        'GENERATE_25D_VOLUME=': False,
-
         # Display Parameters
         'PLOT_ALL_2D': False,
         'REVIEW_PLOT_2D': False,
 
         'PLOT_NETWORK_GEN': True,
         'PLOT_NETWORK_DATA': False,
-
-        'PLOT_25D_MESH=': False,
 
         # 2D Analysis
         'CONTRAST_METHOD': 'rescale',
@@ -71,10 +61,6 @@ class IO:
         'NEAR_NODE_TOL': 5,
         'LENGTH_TOL': 1,
 
-        # 25D Analysis
-        'H_PCT_25D=': -1,
-        'CONNECTED_25D_MESH=': 1,
-        'CONNECTED_25D_VOLUME=': 0,
 
         # Memory Restriction
         'MAX_PIXEL': 512,
@@ -86,15 +72,12 @@ class IO:
         'TIF_FILE=': str,
         'SCALE_X=': float,
         'SCALE_Y=': float,
-        'SCALE_Z=': float,
 
         # Piplelines to Run
         'SEGMENT_2D=': bool,
         'NETWORK_2D_GEN=': bool,
         'NETWORK_2D_COMPARE=': bool,
 
-        'MESH_25D=': bool,
-        'VOLUME_ANALYSIS=': bool,
 
         # Save Parameters
         'OUTPUT_DIR=': str,
@@ -107,9 +90,6 @@ class IO:
 
         'SAVE_2D_NETWORK=': bool,
 
-        'SAVE_25D_MESH=': bool,
-        'SAVE_25D_MASK=': bool,
-        'GENERATE_25D_VOLUME=': bool,
 
         # Display Parameters
         'PLOT_ALL_2D=': bool,
@@ -117,8 +97,6 @@ class IO:
 
         'PLOT_NETWORK_GEN=': bool,
         'PLOT_NETWORK_DATA=': bool,
-
-        'PLOT_25D_MESH=': bool,
 
         # 2D Analysis
         'CONTRAST_METHOD=': str,
@@ -139,11 +117,6 @@ class IO:
         'MIN_NODE_COUNT=': int,
         'NEAR_NODE_TOL=': int,
         'LENGTH_TOL=': int,
-
-        # 25D Analysis
-        'H_PCT_25D=': float,
-        'CONNECTED_25D_MESH=': bool,
-        'CONNECTED_25D_VOLUME=': bool,
 
         # Memory Restriction
         'MAX_PIXEL=': int,
@@ -174,13 +147,11 @@ class IO:
         if silent_mode:
             self.input_dic['PLOT_ALL_2D'] = False
             self.input_dic['REVIEW_PLOT_2D'] = False
-            self.input_dic['PLOT_25D_MESH'] = False
             self.input_dic['PLOT_NETWORK_GEN'] = False
             self.input_dic['PLOT_NETWORK_DATA'] = False
 
         if all_plots_mode:
             self.input_dic['PLOT_ALL_2D'] = True
-            self.input_dic['PLOT_25D_MESH'] = True
             self.input_dic['REVIEW_PLOT_2D'] = True
             self.input_dic['PLOT_NETWORK_GEN'] = True
             self.input_dic['PLOT_NETWORK_DATA'] = True
@@ -189,7 +160,7 @@ class IO:
             for ins in self.input_dic:
                 print(ins + '=' + str(self.input_dic[ins]))
 
-        if self.input_dic['SEGMENT_2D'] or self.input_dic['MESH_25D']:
+        if self.input_dic['SEGMENT_2D']:
             std_2d_segment(self.input_dic['TIF_FILE'],
                            scale_xy=(self.input_dic['SCALE_X'], self.input_dic['SCALE_Y']),
                            max_dim=self.input_dic['MAX_PIXEL'],
@@ -214,13 +185,6 @@ class IO:
                            save_dist=self.input_dic['SAVE_2D_DIST'] and self.input_dic['SEGMENT_2D'],
                            save_disp=self.input_dic['SAVE_2D_DISPLAY'] and self.input_dic['SEGMENT_2D'],
                            save_review=self.input_dic['SAVE_2D_REVIEW'] and self.input_dic['SEGMENT_2D'],
-                           generate_mesh_25=self.input_dic['MESH_25D'],
-                           connected_mesh=self.input_dic['CONNECTED_25D_MESH'],
-                           connected_vol=self.input_dic['CONNECTED_25D_VOLUME'],
-                           plot_25d=self.input_dic['PLOT_25D_MESH'],
-                           save_volume_mask=self.input_dic['SAVE_25D_MASK'] or self.input_dic['VOLUME_ANALYSIS'],
-                           save_surface_meshes=self.input_dic['SAVE_25D_MESH'],
-                           generate_volume_meshes=self.input_dic['GENERATE_25D_VOLUME']
                            )
 
         if self.input_dic['NETWORK_2D_GEN']:

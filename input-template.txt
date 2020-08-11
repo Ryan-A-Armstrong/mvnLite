@@ -8,15 +8,11 @@ Required Fields
 TIF_FILE=
 SCALE_X=
 SCALE_Y=
-SCALE_Z=
 
 #### Pipelines to Run ####
 SEGMENT_2D=0
 NETWORK_2D_GEN=0
 NETWORK_2D_COMPARE=0
-
-MESH_25D=0
-VOLUME_ANALYSIS=0
 
 #### Save Parameters #####
 OUTPUT_DIR=
@@ -29,10 +25,6 @@ SAVE_2D_REVIEW=0
 
 SAVE_2D_NETWORK=0
 
-SAVE_25D_MESH=0
-SAVE_25D_MASK=0
-GENERATE_25D_VOLUME=0
-
 #### Display Parameters #####
 PLOT_ALL_2D=0
 REVIEW_PLOT_2D=0
@@ -40,7 +32,6 @@ REVIEW_PLOT_2D=0
 PLOT_NETWORK_GEN=0
 PLOT_NETWORK_DATA=0
 
-PLOT_25D_MESH=0
 
 =====================
 Adjustable Parameters
@@ -71,12 +62,6 @@ CONNECTED_NETWORK=0
 MIN_NODE_COUNT=3
 NEAR_NODE_TOL=5
 LENGTH_TOL=3
-
-#### 25D Analysis ####
-
-H_PCT_25D=-1
-CONNECTED_25D_MESH=1
-CONNECTED_25D_VOLUME=1
 
 =================
 Memory Parameters

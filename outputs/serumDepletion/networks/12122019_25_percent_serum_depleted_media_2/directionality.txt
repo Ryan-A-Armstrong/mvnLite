@@ -1,0 +1,18 @@
+
+2D Directionality Summary. Weighted is False.
+
+  Percent Vertical (90 degrees):	 0.2201
+  Percent Horizontal (0 degrees):	 0.3482
+  Percent L. Diagonal (135 degrees):	 0.1972
+  Percent R. Diagonal (45 degrees):	 0.2345
+
+  Max score:	 0.3482
+
+2D Directionality Summary. Weighted is True.
+
+  Percent Vertical (90 degrees):	 0.1901
+  Percent Horizontal (0 degrees):	 0.3608
+  Percent L. Diagonal (135 degrees):	 0.2112
+  Percent R. Diagonal (45 degrees):	 0.2380
+
+  Max score:	 0.3608

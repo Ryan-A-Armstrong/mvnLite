@@ -1,0 +1,71 @@
+# mvnLite example input file
+===============
+Required Fields
+===============
+
+# Input image and scale values (um / pixel)
+
+TIF_FILE=C:\Users\ryan\PycharmProjects\mvnLite\data\serumDepletion\12122019_12_percent_serum_depleted_media_1.tif
+SCALE_X=2.4859
+SCALE_Y=2.4859
+
+#### Pipelines to Run ####
+SEGMENT_2D=1
+NETWORK_2D_GEN=1
+NETWORK_2D_COMPARE=0
+
+#### Save Parameters #####
+OUTPUT_DIR=C:\Users\ryan\PycharmProjects\mvnLite\outputs\serumDepletion\
+
+SAVE_2D_MASK=1
+SAVE_2D_SKEL=1
+SAVE_2D_DIST=1
+SAVE_2D_DISPLAY=1
+SAVE_2D_REVIEW=1
+
+SAVE_2D_NETWORK=1
+
+#### Display Parameters #####
+PLOT_ALL_2D=0
+REVIEW_PLOT_2D=0
+
+PLOT_NETWORK_GEN=0
+PLOT_NETWORK_DATA=0
+
+=====================
+Adjustable Parameters
+=====================
+
+#### 2D Analysis #####
+
+# original, rescale, equalize, adaptive
+CONTRAST_METHOD=rescale
+
+# entropy, random-walk
+THRESH_METHOD=random-walk
+
+RWALK_THRESH_LOW=0.1
+RWALK_THRESH_HIGH=0.15
+BTH_K_2D=1
+WTH_K_2D=0
+DILA_GAUSS=0.0001
+OPEN_FIRST=0
+OPEN_K_2D=0
+CLOSE_K_2D=1
+CONNECTED_2D=0
+SMOOTH=2
+
+#### GRAPH Analysis #####
+
+CONNECTED_NETWORK=0
+MIN_NODE_COUNT=3
+NEAR_NODE_TOL=15
+LENGTH_TOL=3
+
+=================
+Memory Parameters
+==================
+MAX_PIXEL=512
+MAX_MICRON=750
+
+

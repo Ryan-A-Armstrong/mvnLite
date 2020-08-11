@@ -1,11 +1,5 @@
 from matplotlib import pyplot as plt
-# from mayavi import mlab
 from skimage import exposure
-
-'''
-Code is taken from examples on skimage documentation. 
-Need to return to properly cite
-'''
 
 
 def compare2(original, filtered, filter_name, cmap='gray'):
@@ -80,22 +74,3 @@ def review_2d_results(original, mask, dskeleton, distance, saving=False, units=1
         return fig
 
     plt.show()
-
-'''
-def visualize_dist(dist, offscreen=False):
-    mlab.options.offscreen = offscreen
-    mlab.surf(dist)
-    mlab.show()
-
-
-def visualize_mesh(mesh_data, offscreen=False, title=''):
-    mlab.options.offscreen = offscreen
-    verts = mesh_data[0]
-    faces = mesh_data[1]
-    if len(title) > 0:
-        mlab.figure(title)
-    mlab.triangular_mesh([vert[0] for vert in verts],
-                         [vert[1] for vert in verts],
-                         [vert[2] for vert in verts], faces)
-    mlab.show()
-'''
