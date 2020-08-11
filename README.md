@@ -1,5 +1,5 @@
 # mvnLite
-mvnLite provides image processing and analysis pipelines for .tif stack images of microvascular networks (MVNs).
+mvnLite provides image processing and analysis pipelines for .tif stack images of microvascular networks (MVNs). It is a more stable subset of mvn-analysis (a 2.5D and 3D extension), however neither are robustly validated to be used for research publications. 
 
 ## Dependancies
 ```
